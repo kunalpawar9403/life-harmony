@@ -8,9 +8,10 @@ export const pool = mysql.createPool({
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'life_harmony',
-    waitForConnections: true,
+    waitForConnections: false,
     connectionLimit: 10,
     queueLimit: 0,
+    connectTimeout: 2000,
     timezone: 'Z',
     dateStrings: false,
     ssl: process.env.DB_SSL === 'true' || (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && !process.env.DB_HOST.includes('127.0.0.1'))
