@@ -46,6 +46,16 @@ export function CartProvider({ children }) {
     const refreshCart = useCallback(async () => {
         if (!isAuthenticated) return;
         try {
+            // Keep local cart authoritative if user already has items in session
+            const localRaw = localStorage.getItem('lh_local_cart');
+            const hasLocalCart = localRaw && JSON.parse(localRaw)?.length > 0;
+            if (hasLocalCart) {
+                return;
+            }
+
+            const isCleared = sessionStorage.getItem('lh_cart_cleared');
+            if (isCleared) return;
+
             const { data } = await api.get('/cart');
             if (Array.isArray(data?.items) && data.items.length > 0) {
                 setItems(data.items);
@@ -60,7 +70,7 @@ export function CartProvider({ children }) {
         try {
             const { data } = await api.get('/wishlist/ids');
             if (Array.isArray(data?.ids) && data.ids.length > 0) {
-                setWishlistIds(data.ids);
+                setWishlistIds((prev) => Array.from(new Set([...prev, ...data.ids])));
             }
         } catch {
             /* ignore background errors */
@@ -77,6 +87,7 @@ export function CartProvider({ children }) {
     // 4. Robust Add To Cart (supports both guests and authenticated members)
     const addToCart = useCallback(
         async (product, qty = 1) => {
+            try { sessionStorage.removeItem('lh_cart_cleared'); } catch {}
             const productId = product.slug || product.id;
             const price = Number(product.price) || 0;
 
@@ -158,6 +169,7 @@ export function CartProvider({ children }) {
         setItems([]);
         try {
             localStorage.removeItem('lh_local_cart');
+            sessionStorage.setItem('lh_cart_cleared', 'true');
         } catch {}
         if (isAuthenticated) {
             try {

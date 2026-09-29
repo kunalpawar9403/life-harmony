@@ -31,13 +31,14 @@ export default function Profile() {
         removeAddress,
         getAddresses,
         getOrders,
+        orders: contextOrders,
     } = useAuth();
     const { wishlist } = useCart();
     const { toast } = useToast();
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState('orders');
-    const [orders, setOrders] = useState([]);
+    const [orders, setOrders] = useState(() => contextOrders || []);
     const [addresses, setAddresses] = useState([]);
     const [profileForm, setProfileForm] = useState({ name: '', email: '' });
     const [newAddress, setNewAddress] = useState({
@@ -45,30 +46,43 @@ export default function Profile() {
         line1: '',
         city: '',
         zip: '',
-        country: 'United States',
+        country: 'India',
     });
     const [showAddressForm, setShowAddressForm] = useState(false);
-    const [loadingData, setLoadingData] = useState(true);
+    const [loadingData, setLoadingData] = useState(() => !contextOrders?.length);
 
     useEffect(() => {
         if (!user) return;
         setProfileForm({ name: user.name, email: user.email });
         let cancelled = false;
-        setLoadingData(true);
+
+        if (Array.isArray(contextOrders) && contextOrders.length > 0) {
+            setOrders(contextOrders);
+            setLoadingData(false);
+        }
+
         Promise.all([getOrders(), getAddresses()])
             .then(([o, a]) => {
                 if (cancelled) return;
-                setOrders(o);
-                setAddresses(a);
+                if (Array.isArray(o) && o.length > 0) {
+                    setOrders(o);
+                } else if (Array.isArray(contextOrders) && contextOrders.length > 0) {
+                    setOrders(contextOrders);
+                }
+                if (Array.isArray(a)) setAddresses(a);
             })
-            .catch(() => { })
+            .catch(() => {
+                if (Array.isArray(contextOrders) && contextOrders.length > 0) {
+                    setOrders(contextOrders);
+                }
+            })
             .finally(() => {
                 if (!cancelled) setLoadingData(false);
             });
         return () => {
             cancelled = true;
         };
-    }, [user, getOrders, getAddresses]);
+    }, [user, getOrders, getAddresses, contextOrders]);
 
     if (!user) {
         return null;

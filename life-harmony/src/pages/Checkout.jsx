@@ -65,7 +65,7 @@ export default function Checkout() {
 
 function CheckoutInner() {
     const { items, subtotal, clearCart } = useCart();
-    const { user, getAddresses, addAddress, addOrder } = useAuth();
+    const { user, getAddresses, addAddress, addOrder, recordOrder } = useAuth();
     const { toast } = useToast();
 
     const [step, setStep] = useState('shipping');
@@ -488,14 +488,16 @@ function CheckoutInner() {
                             });
 
                             clearCart();
-                            setCompletedOrder(verifyRes.data?.order || {
+                            const finalOrder = verifyRes.data?.order || {
                                 id: `LH-${Date.now().toString().slice(-8)}`,
                                 status: 'Processing',
                                 total,
                                 items,
                                 shippingAddress: { ...shipping },
                                 estimatedDelivery: new Date(Date.now() + 4 * 86400000).toISOString(),
-                            });
+                            };
+                            if (recordOrder) recordOrder(finalOrder);
+                            setCompletedOrder(finalOrder);
                             toast({
                                 title: 'Payment verified 🎉',
                                 description: `Razorpay payment ${response.razorpay_payment_id} verified. Order confirmed!`,
@@ -504,7 +506,7 @@ function CheckoutInner() {
                         } catch (verifyErr) {
                             console.warn('Backend verify error, completing with confirmed order fallback:', verifyErr);
                             clearCart();
-                            setCompletedOrder({
+                            const fallbackOrder = {
                                 id: `LH-${Date.now().toString().slice(-8)}`,
                                 date: new Date().toISOString(),
                                 status: 'Processing',
@@ -525,7 +527,9 @@ function CheckoutInner() {
                                     status: 'Paid',
                                 },
                                 items: [...items],
-                            });
+                            };
+                            if (recordOrder) recordOrder(fallbackOrder);
+                            setCompletedOrder(fallbackOrder);
                             toast({
                                 title: 'Payment verified 🎉',
                                 description: `Razorpay payment ${response.razorpay_payment_id} verified. Order confirmed!`,
@@ -613,6 +617,7 @@ function CheckoutInner() {
 
             setShowRzpSimulator(false);
             clearCart();
+            if (recordOrder && verifyRes.data?.order) recordOrder(verifyRes.data.order);
             setCompletedOrder(verifyRes.data.order);
             toast({
                 title: 'Payment verified 🎉',
@@ -668,6 +673,7 @@ function CheckoutInner() {
             });
 
             clearCart();
+            if (recordOrder) recordOrder(order);
             setCompletedOrder(order);
             toast({
                 title: 'Payment successful',

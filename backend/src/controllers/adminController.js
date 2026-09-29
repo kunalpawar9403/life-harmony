@@ -1,4 +1,5 @@
 import { pool, query } from '../config/database.js';
+import * as orderStore from '../services/orderStore.js';
 
 // GET /api/admin/stats
 export async function getStats(_req, res, next) {
@@ -323,7 +324,8 @@ export async function deleteProduct(req, res, next) {
 }
 
 // GET /api/admin/orders
-export async function getOrders(req, res, next) {
+export async function getOrders(req, res) {
+    const memoryOrders = orderStore.getAllOrders();
     try {
         const { status, search } = req.query;
         let sql = `
@@ -351,28 +353,52 @@ export async function getOrders(req, res, next) {
 
         sql += ` ORDER BY o.created_at DESC`;
 
-        const orders = await query(sql, params);
+        const dbOrders = await query(sql, params);
 
-        res.json({
+        // Merge with in-memory orders
+        const map = new Map();
+        dbOrders.forEach(o => {
+            const key = o.order_number || o.id;
+            if (key) {
+                map.set(key, {
+                    ...o,
+                    id: o.order_number || o.id,
+                    orderNumber: o.order_number || o.id,
+                    subtotal: Number(o.subtotal),
+                    shippingCost: Number(o.shipping_cost),
+                    tax: Number(o.tax),
+                    total: Number(o.total),
+                });
+            }
+        });
+
+        memoryOrders.forEach(o => {
+            const key = o.orderNumber || o.id;
+            if (key && !map.has(key)) {
+                map.set(key, o);
+            }
+        });
+
+        const merged = Array.from(map.values());
+        return res.json({
             success: true,
-            count: orders.length,
-            orders: orders.map(o => ({
-                ...o,
-                subtotal: Number(o.subtotal),
-                shippingCost: Number(o.shipping_cost),
-                tax: Number(o.tax),
-                total: Number(o.total),
-            })),
+            count: merged.length,
+            orders: merged,
         });
     } catch (err) {
-        next(err);
+        console.warn('DB error in admin getOrders, returning memory orders:', err.message);
+        return res.json({
+            success: true,
+            count: memoryOrders.length,
+            orders: memoryOrders,
+        });
     }
 }
 
 // GET /api/admin/orders/:id
-export async function getOrderById(req, res, next) {
+export async function getOrderById(req, res) {
+    const { id } = req.params;
     try {
-        const { id } = req.params;
         const [order] = await query(
             `SELECT o.*, u.name as user_name, u.email as user_email
              FROM orders o
@@ -381,37 +407,54 @@ export async function getOrderById(req, res, next) {
             [id, id]
         );
 
-        if (!order) return res.status(404).json({ message: 'Order not found.' });
-
-        const items = await query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
-
-        res.json({
-            success: true,
-            order: {
-                ...order,
-                subtotal: Number(order.subtotal),
-                shippingCost: Number(order.shipping_cost),
-                tax: Number(order.tax),
-                total: Number(order.total),
-                items: items.map(it => ({
-                    ...it,
-                    price: Number(it.price),
-                })),
-            },
-        });
+        if (order) {
+            const items = await query('SELECT * FROM order_items WHERE order_id = ?', [order.id]);
+            return res.json({
+                success: true,
+                order: {
+                    ...order,
+                    id: order.order_number || order.id,
+                    orderNumber: order.order_number || order.id,
+                    subtotal: Number(order.subtotal),
+                    shippingCost: Number(order.shipping_cost),
+                    tax: Number(order.tax),
+                    total: Number(order.total),
+                    items: items.map(it => ({
+                        ...it,
+                        price: Number(it.price),
+                    })),
+                },
+            });
+        }
     } catch (err) {
-        next(err);
+        console.warn('DB error in getOrderById:', err.message);
     }
+
+    const memoryOrder = orderStore.getAllOrders().find(o => o.id === id || o.orderNumber === id);
+    if (memoryOrder) {
+        return res.json({ success: true, order: memoryOrder });
+    }
+    return res.status(404).json({ success: false, message: 'Order not found.' });
 }
 
 // PATCH /api/admin/orders/:id/status
-export async function updateOrderStatus(req, res, next) {
+export async function updateOrderStatus(req, res) {
     try {
         const { id } = req.params;
         const { status, trackingNumber, estimatedDelivery } = req.body;
 
-        const [order] = await query('SELECT * FROM orders WHERE id = ?', [id]);
-        if (!order) return res.status(404).json({ message: 'Order not found.' });
+        orderStore.updateOrderStatus(id, status);
+
+        const [order] = await query('SELECT * FROM orders WHERE id = ? OR order_number = ?', [id, id]);
+        if (!order) {
+            const mem = orderStore.getAllOrders().find(o => o.id === id || o.orderNumber === id);
+            if (mem) {
+                if (status) mem.status = status;
+                if (trackingNumber) mem.trackingNumber = trackingNumber;
+                return res.json({ success: true, order: mem });
+            }
+            return res.status(404).json({ message: 'Order not found.' });
+        }
 
         const fields = [];
         const values = [];
