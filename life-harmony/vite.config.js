@@ -7,18 +7,24 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'copy-404-spa-fallback',
+      name: 'copy-spa-routes',
       closeBundle() {
         try {
           const distDir = path.resolve(__dirname, 'dist');
           const indexPath = path.join(distDir, 'index.html');
-          const notFoundPath = path.join(distDir, '404.html');
           if (fs.existsSync(indexPath)) {
-            fs.copyFileSync(indexPath, notFoundPath);
-            console.log('✅ Created dist/404.html for SPA client routing');
+            const routes = [
+              '404', 'shop', 'wishlist', 'admin', 'checkout', 'login',
+              'register', 'blog', 'profile', 'order-success'
+            ];
+            routes.forEach((route) => {
+              const target = path.join(distDir, `${route}.html`);
+              fs.copyFileSync(indexPath, target);
+            });
+            console.log('✅ Generated static HTML files for all client-side routes');
           }
         } catch (e) {
-          console.warn('Could not copy 404.html:', e.message);
+          console.warn('Could not copy route HTML files:', e.message);
         }
       }
     }
