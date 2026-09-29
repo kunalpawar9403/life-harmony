@@ -6,7 +6,6 @@ import { memoryUsers as authMemoryUsers } from './authController.js';
 
 // Default users for admin view (admins only)
 const defaultAdmins = [
-    { id: 1, name: 'kunal pawar', email: 'kunalpawar@gmail.com', role: 'admin', created_at: '2026-09-20T10:00:00.000Z' },
     { id: 3, name: 'Admin Life Harmony', email: 'admin@lifeharmony.com', role: 'admin', created_at: '2026-09-22T10:00:00.000Z' },
 ];
 
