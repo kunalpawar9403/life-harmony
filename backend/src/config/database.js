@@ -13,6 +13,9 @@ export const pool = mysql.createPool({
     queueLimit: 0,
     timezone: 'Z',
     dateStrings: false,
+    ssl: process.env.DB_SSL === 'true' || (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && !process.env.DB_HOST.includes('127.0.0.1'))
+        ? { rejectUnauthorized: false }
+        : undefined,
 });
 
 export async function query(sql, params = []) {
