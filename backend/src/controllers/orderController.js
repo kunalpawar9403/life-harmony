@@ -82,10 +82,11 @@ export async function createOrder(req, res) {
             const orderId = result.insertId;
 
             for (const it of items) {
+                const numericProductId = Number(it.productId || it.dbId) || (Number.isInteger(Number(it.id)) ? Number(it.id) : null);
                 await conn.execute(
                     `INSERT INTO order_items (order_id, product_id, name, subtitle, image, price, qty)
                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                    [orderId, it.id || 1, it.name ?? null, it.subtitle ?? null, it.image ?? null, it.price, it.qty]
+                    [orderId, numericProductId, it.name ?? 'Wellness Product', it.subtitle ?? null, it.image ?? null, Number(it.price) || 1499, Number(it.qty) || 1]
                 );
             }
 
