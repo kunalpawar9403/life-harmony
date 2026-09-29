@@ -3,7 +3,7 @@ import { hashPassword, comparePassword } from '../utils/password.js';
 import { signToken } from '../utils/jwt.js';
 
 // In-memory user store for serverless standalone operation and emergency database offline resilience
-const memoryUsers = new Map([
+export const memoryUsers = new Map([
     ['admin@lifeharmony.com', { id: 3, name: 'Admin Life Harmony', email: 'admin@lifeharmony.com', role: 'admin', password: 'admin123', created_at: new Date() }],
     ['kunalpawar@gmail.com', { id: 1, name: 'kunal pawar', email: 'kunalpawar@gmail.com', role: 'admin', password: 'password123', created_at: new Date() }],
 ]);

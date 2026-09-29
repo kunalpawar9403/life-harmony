@@ -2,9 +2,10 @@ import { pool, query } from '../config/database.js';
 import * as orderStore from '../services/orderStore.js';
 import * as productStore from '../services/productStore.js';
 import { fallbackProducts } from '../data/fallbackData.js';
+import { memoryUsers as authMemoryUsers } from './authController.js';
 
 // Default users for admin view (admins only)
-const memoryUsers = [
+const defaultAdmins = [
     { id: 1, name: 'kunal pawar', email: 'kunalpawar@gmail.com', role: 'admin', created_at: '2026-09-20T10:00:00.000Z' },
     { id: 3, name: 'Admin Life Harmony', email: 'admin@lifeharmony.com', role: 'admin', created_at: '2026-09-22T10:00:00.000Z' },
 ];
@@ -38,7 +39,7 @@ export async function getStats(_req, res) {
                 COUNT(*) as orderCount,
                 COALESCE(SUM(CASE WHEN status != 'Cancelled' THEN total ELSE 0 END), 0) as dailyRevenue
              FROM orders
-             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY)
+             WHERE created_at >= (CURRENT_DATE - INTERVAL '14 days')
              GROUP BY DATE(created_at)
              ORDER BY date ASC`
         );
@@ -65,23 +66,30 @@ export async function getStats(_req, res) {
 
         return res.json({
             success: true,
-            totalRevenue: Number(stats.totalRevenue) || 0,
-            totalOrders: Number(stats.totalOrders) || 0,
-            processingOrders: Number(stats.processingOrders) || 0,
-            shippedOrders: Number(stats.shippedOrders) || 0,
-            deliveredOrders: Number(stats.deliveredOrders) || 0,
-            cancelledOrders: Number(stats.cancelledOrders) || 0,
+            totalRevenue: Number(stats.totalRevenue ?? stats.totalrevenue ?? 0),
+            totalOrders: Number(stats.totalOrders ?? stats.totalorders ?? 0),
+            processingOrders: Number(stats.processingOrders ?? stats.processingorders ?? 0),
+            shippedOrders: Number(stats.shippedOrders ?? stats.shippedorders ?? 0),
+            deliveredOrders: Number(stats.deliveredOrders ?? stats.deliveredorders ?? 0),
+            cancelledOrders: Number(stats.cancelledOrders ?? stats.cancelledorders ?? 0),
             totalCustomers: Number(usersCount?.count) || 0,
             totalUsers: Number(totalUsersCount?.count) || 0,
             totalProducts: Number(productsCount?.count) || 0,
             lowStockProducts: Number(lowStockCount?.count) || 0,
             dailyTrends: dailyTrends.map(d => ({
                 date: d.date instanceof Date ? d.date.toISOString().slice(0, 10) : String(d.date),
-                orders: Number(d.orderCount),
-                revenue: Number(d.dailyRevenue),
+                orders: Number(d.orderCount ?? d.ordercount ?? 0),
+                revenue: Number(d.dailyRevenue ?? d.dailyrevenue ?? 0),
             })),
-            recentOrders,
-            categoryCounts,
+            recentOrders: recentOrders.map(o => ({
+                ...o,
+                itemCount: Number(o.itemCount ?? o.itemcount ?? 0),
+            })),
+            categoryCounts: categoryCounts.map(c => ({
+                ...c,
+                avgPrice: Number(c.avgPrice ?? c.avgprice ?? 0),
+                count: Number(c.count ?? 0),
+            })),
         });
     } catch (err) {
         console.warn('DB error in admin getStats, computing from memory store:', err.message);
@@ -125,16 +133,17 @@ export async function getStats(_req, res) {
             revenue: Math.round(val.revenue),
         })).sort((a, b) => a.date.localeCompare(b.date));
 
-        return res.json({
-            success: true,
-            totalRevenue: Math.round(totalRevenue * 100) / 100,
-            totalOrders: allOrders.length,
-            processingOrders,
-            shippedOrders,
-            deliveredOrders,
-            cancelledOrders,
-            totalCustomers: memoryUsers.filter(u => u.role === 'customer').length,
-            totalUsers: memoryUsers.length,
+            const allMemUsers = [...defaultAdmins, ...Array.from(authMemoryUsers.values()).filter(u => !defaultAdmins.some(a => a.email === u.email))];
+            return res.json({
+                success: true,
+                totalRevenue: Math.round(totalRevenue * 100) / 100,
+                totalOrders: allOrders.length,
+                processingOrders,
+                shippedOrders,
+                deliveredOrders,
+                cancelledOrders,
+                totalCustomers: allMemUsers.filter(u => u.role === 'customer').length,
+                totalUsers: allMemUsers.length,
             totalProducts: allProds.length,
             lowStockProducts: lowStock,
             dailyTrends: dailyTrends.length ? dailyTrends : [
@@ -268,7 +277,7 @@ export async function createProduct(req, res) {
                 for (const gSlug of goals) {
                     const [gRows] = await conn.execute('SELECT id FROM goals WHERE slug = ?', [gSlug]);
                     if (gRows.length) {
-                        await conn.execute('INSERT IGNORE INTO product_goals (product_id, goal_id) VALUES (?, ?)', [productId, gRows[0].id]);
+                        await conn.execute('INSERT INTO product_goals (product_id, goal_id) VALUES (?, ?) ON CONFLICT DO NOTHING', [productId, gRows[0].id]);
                     }
                 }
             }
@@ -335,38 +344,29 @@ export async function updateProduct(req, res) {
                 const targetSlug = existing[0].slug;
                 await conn.beginTransaction();
 
-                await conn.execute(
-                    `UPDATE products SET
-                        name = COALESCE(?, name),
-                        subtitle = COALESCE(?, subtitle),
-                        description = COALESCE(?, description),
-                        price = COALESCE(?, price),
-                        original_price = ?,
-                        image = COALESCE(?, image),
-                        category = COALESCE(?, category),
-                        stock = COALESCE(?, stock),
-                        is_featured = COALESCE(?, is_featured)
-                     WHERE id = ?`,
-                    [
-                        name !== undefined ? name.trim() : null,
-                        subtitle !== undefined ? subtitle.trim() : null,
-                        description !== undefined ? description.trim() : null,
-                        price !== undefined ? price : null,
-                        originalPrice !== undefined ? originalPrice : null,
-                        image !== undefined ? image.trim() : null,
-                        category !== undefined ? category : null,
-                        stock !== undefined ? stock : null,
-                        isFeatured !== undefined ? (isFeatured ? 1 : 0) : null,
-                        targetId,
-                    ]
-                );
+                const updateFields = [];
+                const updateValues = [];
+                if (name !== undefined) { updateFields.push('name = ?'); updateValues.push(name.trim()); }
+                if (subtitle !== undefined) { updateFields.push('subtitle = ?'); updateValues.push(subtitle.trim()); }
+                if (description !== undefined) { updateFields.push('description = ?'); updateValues.push(description.trim()); }
+                if (price !== undefined) { updateFields.push('price = ?'); updateValues.push(price); }
+                if (originalPrice !== undefined) { updateFields.push('original_price = ?'); updateValues.push(originalPrice); }
+                if (image !== undefined) { updateFields.push('image = ?'); updateValues.push(image.trim()); }
+                if (category !== undefined) { updateFields.push('category = ?'); updateValues.push(category); }
+                if (stock !== undefined) { updateFields.push('stock = ?'); updateValues.push(stock); }
+                if (isFeatured !== undefined) { updateFields.push('is_featured = ?'); updateValues.push(isFeatured ? 1 : 0); }
+
+                if (updateFields.length) {
+                    updateValues.push(targetId);
+                    await conn.execute(`UPDATE products SET ${updateFields.join(', ')} WHERE id = ?`, updateValues);
+                }
 
                 if (Array.isArray(goals)) {
                     await conn.execute('DELETE FROM product_goals WHERE product_id = ?', [targetId]);
                     for (const gSlug of goals) {
                         const [gRows] = await conn.execute('SELECT id FROM goals WHERE slug = ?', [gSlug]);
                         if (gRows.length) {
-                            await conn.execute('INSERT IGNORE INTO product_goals (product_id, goal_id) VALUES (?, ?)', [targetId, gRows[0].id]);
+                            await conn.execute('INSERT INTO product_goals (product_id, goal_id) VALUES (?, ?) ON CONFLICT DO NOTHING', [targetId, gRows[0].id]);
                         }
                     }
                 }
@@ -585,7 +585,8 @@ export async function updateOrderStatus(req, res) {
     orderStore.updateOrderStatus(id, status, trackingNumber);
 
     try {
-        const [order] = await query('SELECT * FROM orders WHERE id = ? OR order_number = ?', [id, id]);
+        const numericId = Number(id);
+        const [order] = await query('SELECT * FROM orders WHERE id = ? OR order_number = ?', [!isNaN(numericId) ? numericId : 0, id]);
         if (order) {
             const fields = [];
             const values = [];
@@ -661,14 +662,15 @@ export async function getUsers(req, res) {
             success: true,
             users: users.map(u => ({
                 ...u,
-                orderCount: Number(u.orderCount),
-                totalSpent: Number(u.totalSpent),
+                orderCount: Number(u.orderCount ?? u.ordercount ?? 0),
+                totalSpent: Number(u.totalSpent ?? u.totalspent ?? 0),
             })),
         });
     } catch (err) {
         console.warn('DB error in admin getUsers, using memory users:', err.message);
 
-        let list = [...memoryUsers];
+        const allMemUsers = [...defaultAdmins, ...Array.from(authMemoryUsers.values()).filter(u => !defaultAdmins.some(a => a.email === u.email))];
+        let list = allMemUsers;
         if (role && role !== 'all') {
             list = list.filter(u => u.role === role);
         }

@@ -17,7 +17,7 @@ async function start() {
         await testConnection();
     } catch (err) {
         console.warn('⚠️ Database connection notice:', err.message);
-        console.warn('⚠️ Backend running in standalone mode. Connect a cloud MySQL DB to enable persistent storage.');
+        console.warn('⚠️ Backend running in standalone fallback mode. Connect Supabase PostgreSQL to enable persistent cloud storage.');
     }
 
     app.listen(PORT, () => {
