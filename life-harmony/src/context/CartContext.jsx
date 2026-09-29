@@ -7,174 +7,184 @@ const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
     const { isAuthenticated } = useAuth();
-    const [items, setItems] = useState([]);
-    const [wishlistIds, setWishlistIds] = useState([]);
+
+    // 1. Initialize immediately from localStorage so count never jumps on refresh
+    const [items, setItems] = useState(() => {
+        try {
+            const raw = localStorage.getItem('lh_local_cart');
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    });
+
+    const [wishlistIds, setWishlistIds] = useState(() => {
+        try {
+            const raw = localStorage.getItem('lh_local_wishlist');
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    });
+
     const [drawerOpen, setDrawerOpen] = useState(false);
 
+    // 2. Keep localStorage in sync whenever items or wishlist change
+    useEffect(() => {
+        try {
+            localStorage.setItem('lh_local_cart', JSON.stringify(items));
+        } catch {}
+    }, [items]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('lh_local_wishlist', JSON.stringify(wishlistIds));
+        } catch {}
+    }, [wishlistIds]);
+
+    // 3. Background server sync (non-destructive)
     const refreshCart = useCallback(async () => {
-        if (!isAuthenticated) {
-            setItems([]);
-            return;
-        }
+        if (!isAuthenticated) return;
         try {
             const { data } = await api.get('/cart');
-            if (Array.isArray(data?.items)) setItems(data.items);
-        } catch {
-            const saved = localStorage.getItem('lh_local_cart');
-            if (saved) {
-                try { setItems(JSON.parse(saved)); } catch {}
+            if (Array.isArray(data?.items) && data.items.length > 0) {
+                setItems(data.items);
             }
+        } catch {
+            /* ignore background errors */
         }
     }, [isAuthenticated]);
 
     const refreshWishlist = useCallback(async () => {
-        if (!isAuthenticated) {
-            setWishlistIds([]);
-            return;
-        }
+        if (!isAuthenticated) return;
         try {
             const { data } = await api.get('/wishlist/ids');
-            if (Array.isArray(data?.ids)) setWishlistIds(data.ids);
-        } catch {
-            const saved = localStorage.getItem('lh_local_wishlist');
-            if (saved) {
-                try { setWishlistIds(JSON.parse(saved)); } catch {}
+            if (Array.isArray(data?.ids) && data.ids.length > 0) {
+                setWishlistIds(data.ids);
             }
+        } catch {
+            /* ignore background errors */
         }
     }, [isAuthenticated]);
 
     useEffect(() => {
-        refreshCart();
-        refreshWishlist();
-    }, [refreshCart, refreshWishlist]);
+        if (isAuthenticated) {
+            refreshCart();
+            refreshWishlist();
+        }
+    }, [isAuthenticated, refreshCart, refreshWishlist]);
 
+    // 4. Robust Add To Cart (supports both guests and authenticated members)
     const addToCart = useCallback(
         async (product, qty = 1) => {
-            if (!isAuthenticated) {
-                throw new Error('Please sign in to add items to your cart.');
-            }
-            try {
-                const { data } = await api.post('/cart/items', {
-                    productSlug: product.id,
-                    qty,
-                });
-                if (Array.isArray(data?.items)) {
-                    setItems(data.items);
-                    localStorage.setItem('lh_local_cart', JSON.stringify(data.items));
-                    return;
-                }
-            } catch (err) {
-                console.warn('Cart API error, persisting locally:', err.message);
-            }
+            const productId = product.slug || product.id;
+            const price = Number(product.price) || 0;
 
-            // Fallback to local cart state
+            // Immediately update local state so UI is instant and never flickers
             setItems((prev) => {
-                const existing = prev.find((i) => i.id === product.id);
+                const existing = prev.find((i) => (i.slug || i.id) === productId);
                 let updated;
                 if (existing) {
                     updated = prev.map((i) =>
-                        i.id === product.id ? { ...i, qty: i.qty + qty } : i
+                        (i.slug || i.id) === productId
+                            ? { ...i, qty: i.qty + qty }
+                            : i
                     );
                 } else {
                     updated = [
                         ...prev,
                         {
-                            id: product.id,
+                            id: productId,
+                            slug: productId,
                             name: product.name,
                             subtitle: product.subtitle,
-                            price: Number(product.price),
+                            price,
                             image: product.image,
                             qty,
                         },
                     ];
                 }
-                localStorage.setItem('lh_local_cart', JSON.stringify(updated));
                 return updated;
             });
+
+            // Optional background server sync if logged in
+            if (isAuthenticated) {
+                try {
+                    await api.post('/cart/items', {
+                        productSlug: productId,
+                        qty,
+                    });
+                } catch (err) {
+                    console.warn('Background cart sync notice:', err.message);
+                }
+            }
         },
         [isAuthenticated]
     );
 
-    const removeFromCart = useCallback(async (id) => {
-        try {
-            const { data } = await api.delete(`/cart/items/${id}`);
-            if (Array.isArray(data?.items)) {
-                setItems(data.items);
-                localStorage.setItem('lh_local_cart', JSON.stringify(data.items));
-                return;
+    const removeFromCart = useCallback(
+        async (id) => {
+            setItems((prev) => prev.filter((i) => (i.slug || i.id) !== id));
+            if (isAuthenticated) {
+                try {
+                    await api.delete(`/cart/items/${id}`);
+                } catch {}
             }
-        } catch (err) {
-            console.warn('Cart API error, removing locally:', err.message);
-        }
-        setItems((prev) => {
-            const updated = prev.filter((i) => i.id !== id);
-            localStorage.setItem('lh_local_cart', JSON.stringify(updated));
-            return updated;
-        });
-    }, []);
+        },
+        [isAuthenticated]
+    );
 
-    const updateQty = useCallback(async (id, qty) => {
-        try {
-            const { data } = await api.put(`/cart/items/${id}`, { qty });
-            if (Array.isArray(data?.items)) {
-                setItems(data.items);
-                localStorage.setItem('lh_local_cart', JSON.stringify(data.items));
+    const updateQty = useCallback(
+        async (id, qty) => {
+            if (qty <= 0) {
+                removeFromCart(id);
                 return;
             }
-        } catch (err) {
-            console.warn('Cart API error, updating qty locally:', err.message);
-        }
-        setItems((prev) => {
-            const updated = prev
-                .map((i) => (i.id === id ? { ...i, qty } : i))
-                .filter((i) => i.qty > 0);
-            localStorage.setItem('lh_local_cart', JSON.stringify(updated));
-            return updated;
-        });
-    }, []);
+            setItems((prev) =>
+                prev.map((i) =>
+                    (i.slug || i.id) === id ? { ...i, qty } : i
+                )
+            );
+            if (isAuthenticated) {
+                try {
+                    await api.put(`/cart/items/${id}`, { qty });
+                } catch {}
+            }
+        },
+        [isAuthenticated, removeFromCart]
+    );
 
     const clearCart = useCallback(async () => {
-        try {
-            await api.delete('/cart');
-        } catch (err) {
-            console.warn('Cart API error on clear:', err.message);
-        }
-        localStorage.removeItem('lh_local_cart');
         setItems([]);
-    }, []);
+        try {
+            localStorage.removeItem('lh_local_cart');
+        } catch {}
+        if (isAuthenticated) {
+            try {
+                await api.delete('/cart');
+            } catch {}
+        }
+    }, [isAuthenticated]);
 
+    // 5. Robust Wishlist Toggle (Supports guests and members)
     const toggleWishlist = useCallback(
         async (id) => {
-            if (!isAuthenticated) {
-                throw new Error('Please sign in to save items.');
-            }
-            try {
-                const { data } = await api.post(`/wishlist/toggle/${id}`);
-                if (data && typeof data.inWishlist === 'boolean') {
-                    setWishlistIds((prev) => {
-                        const updated = data.inWishlist
-                            ? [...prev, id]
-                            : prev.filter((x) => x !== id);
-                        localStorage.setItem('lh_local_wishlist', JSON.stringify(updated));
-                        return updated;
-                    });
-                    return;
-                }
-            } catch (err) {
-                console.warn('Wishlist API error, toggling locally:', err.message);
-            }
             setWishlistIds((prev) => {
                 const exists = prev.includes(id);
-                const updated = exists ? prev.filter((x) => x !== id) : [...prev, id];
-                localStorage.setItem('lh_local_wishlist', JSON.stringify(updated));
-                return updated;
+                return exists ? prev.filter((x) => x !== id) : [...prev, id];
             });
+
+            if (isAuthenticated) {
+                try {
+                    await api.post(`/wishlist/toggle/${id}`);
+                } catch {}
+            }
         },
         [isAuthenticated]
     );
 
-    const cartCount = items.reduce((s, i) => s + i.qty, 0);
-    const subtotal = items.reduce((s, i) => s + i.qty * i.price, 0);
+    const cartCount = items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+    const subtotal = items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.price) || 0), 0);
 
     return (
         <CartContext.Provider
