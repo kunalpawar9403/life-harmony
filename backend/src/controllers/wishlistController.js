@@ -1,6 +1,9 @@
 import { query } from '../config/database.js';
+import { fallbackProducts } from '../data/fallbackData.js';
 
-export async function getWishlist(req, res, next) {
+const memoryWishlists = new Map();
+
+export async function getWishlist(req, res) {
     try {
         const rows = await query(
             `SELECT p.slug, p.name, p.subtitle, p.price, p.image
@@ -13,12 +16,19 @@ export async function getWishlist(req, res, next) {
                 id: r.slug, name: r.name, subtitle: r.subtitle, price: Number(r.price), image: r.image,
             }))
         });
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.warn('DB error in getWishlist, using memory:', err.message);
+        const slugs = memoryWishlists.get(req.user.id) || [];
+        const wishlist = fallbackProducts.filter(p => slugs.includes(p.slug)).map(p => ({
+            id: p.slug, name: p.name, subtitle: p.subtitle, price: Number(p.price), image: p.image
+        }));
+        res.json({ wishlist });
+    }
 }
 
-export async function toggleWishlist(req, res, next) {
+export async function toggleWishlist(req, res) {
+    const { productSlug } = req.params;
     try {
-        const { productSlug } = req.params;
         const [product] = await query('SELECT id FROM products WHERE slug = ?', [productSlug]);
         if (!product) return res.status(404).json({ message: 'Product not found' });
 
@@ -29,15 +39,30 @@ export async function toggleWishlist(req, res, next) {
         }
         await query('INSERT INTO wishlists (user_id, product_id) VALUES (?, ?)', [req.user.id, product.id]);
         res.json({ inWishlist: true });
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.warn('DB error in toggleWishlist, using memory:', err.message);
+        let slugs = memoryWishlists.get(req.user.id) || [];
+        let inWishlist = false;
+        if (slugs.includes(productSlug)) {
+            slugs = slugs.filter(s => s !== productSlug);
+        } else {
+            slugs.push(productSlug);
+            inWishlist = true;
+        }
+        memoryWishlists.set(req.user.id, slugs);
+        res.json({ inWishlist });
+    }
 }
 
-export async function getWishlistIds(req, res, next) {
+export async function getWishlistIds(req, res) {
     try {
         const rows = await query(
             `SELECT p.slug FROM wishlists w JOIN products p ON p.id = w.product_id WHERE w.user_id = ?`,
             [req.user.id]
         );
         res.json({ ids: rows.map(r => r.slug) });
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.warn('DB error in getWishlistIds, using memory:', err.message);
+        res.json({ ids: memoryWishlists.get(req.user.id) || [] });
+    }
 }
