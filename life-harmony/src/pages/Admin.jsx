@@ -460,16 +460,27 @@ export default function Admin() {
                         </button>
                     </form>
 
-                    {/* Autofill Demo Helper */}
+                    {/* Admin Demo Credentials Box */}
                     <div className="mt-6 pt-5 border-t border-[#363636]/10 text-center space-y-3">
-                        <button
-                            type="button"
-                            onClick={handleAutofillDemo}
-                            className="text-xs font-semibold text-[#2563eb] hover:underline inline-flex items-center gap-1.5"
-                        >
-                            <Sparkles className="w-3.5 h-3.5 text-[#3b82f6]" />
-                            <span>Autofill Demo Admin Credentials</span>
-                        </button>
+                        <div className="p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-left text-xs space-y-1.5 shadow-xs">
+                            <div className="flex items-center justify-between">
+                                <span className="font-semibold text-amber-900 flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                                    Admin Demo Credentials
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleAutofillDemo}
+                                    className="px-2.5 py-1 rounded-full bg-amber-700 hover:bg-amber-800 text-white font-medium text-[11px] transition-colors shadow-xs cursor-pointer"
+                                >
+                                    Autofill
+                                </button>
+                            </div>
+                            <div className="text-[#555] font-mono text-[11px]">
+                                <div><strong className="text-neutral-700 font-sans">Email:</strong> admin@lifeharmony.com</div>
+                                <div><strong className="text-neutral-700 font-sans">Password:</strong> admin123</div>
+                            </div>
+                        </div>
                         <div>
                             <Link
                                 to="/"

@@ -3,10 +3,9 @@ import * as orderStore from '../services/orderStore.js';
 import * as productStore from '../services/productStore.js';
 import { fallbackProducts } from '../data/fallbackData.js';
 
-// Default users for admin view
+// Default users for admin view (admins only)
 const memoryUsers = [
     { id: 1, name: 'kunal pawar', email: 'kunalpawar@gmail.com', role: 'admin', created_at: '2026-09-20T10:00:00.000Z' },
-    { id: 2, name: 'Demo Member', email: 'demo@lifeharmony.com', role: 'customer', created_at: '2026-09-21T10:00:00.000Z' },
     { id: 3, name: 'Admin Life Harmony', email: 'admin@lifeharmony.com', role: 'admin', created_at: '2026-09-22T10:00:00.000Z' },
 ];
 
@@ -552,7 +551,7 @@ export async function updateOrderStatus(req, res) {
     const { id } = req.params;
     const { status, trackingNumber, estimatedDelivery } = req.body;
 
-    orderStore.updateOrderStatus(id, status);
+    orderStore.updateOrderStatus(id, status, trackingNumber);
 
     try {
         const [order] = await query('SELECT * FROM orders WHERE id = ? OR order_number = ?', [id, id]);

@@ -1,7 +1,7 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/use-toast';
 
@@ -21,20 +21,6 @@ export default function Login() {
     const handleChange = (e) => {
         setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
         setError('');
-    };
-
-    const handleFillDemo = () => {
-        setMode('login');
-        setForm({
-            name: '',
-            email: 'demo@lifeharmony.com',
-            password: 'password123',
-        });
-        setError('');
-        toast({
-            title: 'Demo Credentials Loaded',
-            description: 'demo@lifeharmony.com filled. Click Sign In to continue.',
-        });
     };
 
     const handleSubmit = async (e) => {
@@ -122,18 +108,6 @@ export default function Login() {
                             ? 'Access your saved protocols, order tracking, and member pricing.'
                             : 'Join our daily wellness collective and unlock personalized recommendations.'}
                     </p>
-                </div>
-
-                {/* Quick Demo Fill Helper */}
-                <div className="mt-6 flex justify-center">
-                    <button
-                        type="button"
-                        onClick={handleFillDemo}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50/90 border border-amber-200/80 text-[11px] font-semibold text-amber-800 hover:bg-amber-100/90 transition-all shadow-sm"
-                    >
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Quick Fill Demo Credentials</span>
-                    </button>
                 </div>
 
                 {error && (

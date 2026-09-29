@@ -198,9 +198,7 @@ export async function listOrders(req, res) {
     const memoryOrders = orderStore.getUserOrders(userId);
 
     try {
-        const queryUsers = (userId === 1 || userId === 2) ? [1, 2] : [userId];
-        const placeholders = queryUsers.map(() => '?').join(',');
-        const orders = await query(`SELECT * FROM orders WHERE user_id IN (${placeholders}) ORDER BY created_at DESC`, queryUsers);
+        const orders = await query(`SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC`, [userId]);
         
         const dbResult = [];
         for (const o of orders) {
@@ -236,9 +234,7 @@ export async function getOrder(req, res) {
     const { orderNumber } = req.params;
 
     try {
-        const queryUsers = (userId === 1 || userId === 2) ? [1, 2] : [userId];
-        const placeholders = queryUsers.map(() => '?').join(',');
-        const [o] = await query(`SELECT * FROM orders WHERE order_number = ? AND user_id IN (${placeholders})`, [orderNumber, ...queryUsers]);
+        const [o] = await query(`SELECT * FROM orders WHERE order_number = ? AND user_id = ?`, [orderNumber, userId]);
         
         if (o) {
             const items = await query('SELECT * FROM order_items WHERE order_id = ?', [o.id]);
