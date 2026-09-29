@@ -1,0 +1,326 @@
+.App {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #1e1e24;
+}
+
+.font-display {
+  font-family: 'Outfit', 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+/* Glass Surfaces */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 36px -12px rgba(44, 30, 40, 0.07), 0 2px 8px -2px rgba(44, 30, 40, 0.04);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+/* Section & Hero Backgrounds */
+.hero-bg {
+  background: radial-gradient(130% 120% at 50% 0%, #ffffff 0%, #f6eaf0 55%, #ecdfe7 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 50px -20px rgba(70, 40, 60, 0.08);
+}
+
+.section-bg {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 40px -15px rgba(50, 30, 45, 0.05);
+}
+
+/* Luxury Card Shadows */
+.card-shadow {
+  box-shadow: 0 4px 20px rgba(30, 30, 36, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.card-shadow-hover {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.card-shadow-hover:hover {
+  box-shadow: 0 16px 40px -12px rgba(40, 25, 35, 0.12), 0 2px 6px -1px rgba(40, 25, 35, 0.04);
+  transform: translateY(-5px);
+  border-color: rgba(173, 200, 248, 0.5);
+}
+
+/* Rotating Stamp */
+.rotating-text {
+  animation: rotate 24s linear infinite;
+  transform-origin: center center;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Infinite Marquee */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  user-select: none;
+  gap: 3rem;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.marquee-content {
+  flex-shrink: 0;
+  display: flex;
+  gap: 3rem;
+  animation: scroll 22s linear infinite;
+}
+
+@keyframes scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* Buttons */
+.btn-dark {
+  background-color: #1c1c21;
+  color: #ffffff;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(28, 28, 33, 0.15);
+}
+
+.btn-dark:hover {
+  background-color: #0d0d10;
+  box-shadow: 0 8px 24px rgba(28, 28, 33, 0.25);
+  transform: translateY(-1px) scale(1.01);
+}
+
+.btn-dark:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+.icon-btn {
+  background-color: #1c1c21;
+  color: white;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.icon-btn:hover {
+  transform: scale(1.06);
+}
+
+.icon-btn-light {
+  background-color: #ffffff;
+  color: #1c1c21;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.icon-btn-light:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.09);
+}
+
+.tab-active {
+  background-color: #1c1c21 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(28, 28, 33, 0.15);
+}
+
+/* Callouts in Hero */
+.callout {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 9999px;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.825rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 8px 24px rgba(50, 30, 45, 0.08);
+  white-space: nowrap;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.callout:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(50, 30, 45, 0.12);
+}
+
+.callout-plus {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid #1c1c21;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Floating orb */
+.circle-blue {
+  background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e2ecff 45%, #adc8f8 100%);
+  border-radius: 50%;
+  box-shadow: inset 0 -12px 35px rgba(173, 200, 248, 0.6), 0 16px 40px rgba(173, 200, 248, 0.35);
+}
+
+/* Skeleton Loading Shimmer */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f0e6ec 25%, #f9f2f6 50%, #f0e6ec 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+
+/* Mobile Bottom Navigation Fluid Animations */
+@keyframes tabBounce {
+  0% { transform: scale(0.88) translateY(2px); }
+  50% { transform: scale(1.18) translateY(-4px); }
+  75% { transform: scale(0.96) translateY(0); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.35); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes heartPulse {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.25); }
+  30% { transform: scale(1.05); }
+  45% { transform: scale(1.2); }
+}
+
+@keyframes rippleWave {
+  0% { transform: scale(0.3); opacity: 0.9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes dockGlow {
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50% { opacity: 0.65; transform: scale(1.02); }
+}
+
+.animate-tab-bounce {
+  animation: tabBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-badge-pop {
+  animation: badgePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-heart-pulse {
+  animation: heartPulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-ripple {
+  animation: rippleWave 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+}
+
+.animate-dock-glow {
+  animation: dockGlow 4s ease-in-out infinite;
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+}
+
+/* Organic Floating Callouts around 3D Bottle */
+@keyframes floatBadge1 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-7px) rotate(-1.5deg); }
+}
+
+@keyframes floatBadge2 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-9px) rotate(2deg); }
+}
+
+@keyframes floatBadge3 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(-1deg); }
+}
+
+.animate-float-badge-1 {
+  animation: floatBadge1 4.5s ease-in-out infinite;
+}
+
+.animate-float-badge-2 {
+  animation: floatBadge2 5.5s ease-in-out infinite 0.8s;
+}
+
+.animate-float-badge-3 {
+  animation: floatBadge3 5s ease-in-out infinite 1.5s;
+}
+
+/* Luxury Button Light Swipe Shimmer */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -70%;
+  width: 45%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  animation: shineSwipe 5s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes shineSwipe {
+  0%, 70% {
+    left: -70%;
+  }
+  100% {
+    left: 160%;
+  }
+}
+
+/* Smooth Entrance Fade */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
