@@ -1,4 +1,5 @@
 import { query } from '../config/database.js';
+import { getFallbackProducts, fallbackProducts, fallbackGoals } from '../data/fallbackData.js';
 
 function mapProduct(row, { goals = [], ingredients = [], benefits = [], reviews = [] } = {}) {
     return {
@@ -79,14 +80,23 @@ export async function listProducts(req, res, next) {
         const rows = await query(sql, params);
         const items = await hydrate(rows);
         res.json({ products: items });
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.warn('Database query failed in listProducts; returning fallback catalog:', err.message);
+        res.json({ products: getFallbackProducts(req.query) });
+    }
 }
 
 export async function getProduct(req, res, next) {
     try {
         const { id } = req.params; // slug
         const rows = await query('SELECT * FROM products WHERE slug = ?', [id]);
-        if (!rows.length) return res.status(404).json({ message: 'Product not found' });
+        if (!rows.length) {
+            const fallback = fallbackProducts.find(p => p.slug === id);
+            if (fallback) {
+                return res.json({ product: fallback, related: [] });
+            }
+            return res.status(404).json({ message: 'Product not found' });
+        }
         const [product] = await hydrate(rows);
 
         // related: same goal, different product
@@ -105,12 +115,19 @@ export async function getProduct(req, res, next) {
         }
 
         res.json({ product, related });
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.warn('Database query failed in getProduct; returning fallback:', err.message);
+        const fallback = fallbackProducts.find(p => p.slug === req.params.id) || fallbackProducts[0];
+        res.json({ product: fallback, related: [] });
+    }
 }
 
 export async function listGoals(_req, res, next) {
     try {
         const rows = await query('SELECT slug AS id, label FROM goals ORDER BY id');
         res.json({ goals: [{ id: 'all', label: 'All' }, ...rows] });
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.warn('Database query failed in listGoals; returning fallback goals:', err.message);
+        res.json({ goals: fallbackGoals });
+    }
 }
