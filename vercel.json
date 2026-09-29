@@ -18,22 +18,9 @@
       }
     },
     {
-      "source": "/assets/(.*)",
-      "destination": {
-        "service": "life-harmony"
-      }
-    },
-    {
-      "source": "/(.*\\.[a-zA-Z0-9]+)",
-      "destination": {
-        "service": "life-harmony"
-      }
-    },
-    {
       "source": "/(.*)",
       "destination": {
-        "service": "life-harmony",
-        "path": "/index.html"
+        "service": "life-harmony"
       }
     }
   ]
