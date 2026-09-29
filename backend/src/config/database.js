@@ -13,7 +13,8 @@ dotenv.config();
 const connectionString =
     process.env.SUPABASE_DB_URL ||
     process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL;
+    process.env.POSTGRES_URL ||
+    'postgresql://postgres:940016Ku%40%23Vi@db.vvcpapgdbbsdeipiklbl.supabase.co:5432/postgres';
 
 const poolConfig = connectionString
     ? {
