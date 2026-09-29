@@ -325,8 +325,14 @@ export async function updateProduct(req, res) {
 
     if (conn) {
         try {
-            const [existing] = await conn.execute('SELECT id FROM products WHERE id = ?', [id]);
+            const numericId = Number(id);
+            const [existing] = await conn.execute(
+                'SELECT id, slug FROM products WHERE id = ? OR slug = ?',
+                [!isNaN(numericId) ? numericId : 0, id]
+            );
             if (existing.length) {
+                const targetId = existing[0].id;
+                const targetSlug = existing[0].slug;
                 await conn.beginTransaction();
 
                 await conn.execute(
@@ -351,33 +357,34 @@ export async function updateProduct(req, res) {
                         category !== undefined ? category : null,
                         stock !== undefined ? stock : null,
                         isFeatured !== undefined ? (isFeatured ? 1 : 0) : null,
-                        id,
+                        targetId,
                     ]
                 );
 
                 if (Array.isArray(goals)) {
-                    await conn.execute('DELETE FROM product_goals WHERE product_id = ?', [id]);
+                    await conn.execute('DELETE FROM product_goals WHERE product_id = ?', [targetId]);
                     for (const gSlug of goals) {
                         const [gRows] = await conn.execute('SELECT id FROM goals WHERE slug = ?', [gSlug]);
                         if (gRows.length) {
-                            await conn.execute('INSERT IGNORE INTO product_goals (product_id, goal_id) VALUES (?, ?)', [id, gRows[0].id]);
+                            await conn.execute('INSERT IGNORE INTO product_goals (product_id, goal_id) VALUES (?, ?)', [targetId, gRows[0].id]);
                         }
                     }
                 }
 
                 if (Array.isArray(benefits)) {
-                    await conn.execute('DELETE FROM product_benefits WHERE product_id = ?', [id]);
+                    await conn.execute('DELETE FROM product_benefits WHERE product_id = ?', [targetId]);
                     for (const text of benefits) {
                         if (text && text.trim()) {
-                            await conn.execute('INSERT INTO product_benefits (product_id, text) VALUES (?, ?)', [id, text.trim()]);
+                            await conn.execute('INSERT INTO product_benefits (product_id, text) VALUES (?, ?)', [targetId, text.trim()]);
                         }
                     }
                 }
 
                 await conn.commit();
-                const [updated] = await query('SELECT * FROM products WHERE id = ?', [id]);
+                const [updated] = await query('SELECT * FROM products WHERE id = ?', [targetId]);
                 if (updated) {
-                    productStore.updateProduct(id, { ...updated, price: Number(updated.price), goals, benefits });
+                    productStore.updateProduct(targetId, { ...updated, price: Number(updated.price), goals, benefits });
+                    productStore.updateProduct(targetSlug, { ...updated, price: Number(updated.price), goals, benefits });
                     return res.json({ success: true, product: updated });
                 }
             }
@@ -397,12 +404,26 @@ export async function updateProduct(req, res) {
 // DELETE /api/admin/products/:id
 export async function deleteProduct(req, res) {
     const { id } = req.params;
+    const numericId = Number(id);
     try {
-        await query('DELETE FROM products WHERE id = ?', [id]);
+        const existing = await query(
+            'SELECT id, slug FROM products WHERE id = ? OR slug = ?',
+            [!isNaN(numericId) ? numericId : 0, id]
+        );
+        if (existing.length) {
+            const targetId = existing[0].id;
+            const targetSlug = existing[0].slug;
+            await query('DELETE FROM products WHERE id = ?', [targetId]);
+            productStore.deleteProduct(targetId);
+            productStore.deleteProduct(targetSlug);
+        } else {
+            await query('DELETE FROM products WHERE id = ? OR slug = ?', [!isNaN(numericId) ? numericId : 0, id]);
+            productStore.deleteProduct(id);
+        }
     } catch (err) {
         console.warn('DB error in deleteProduct:', err.message);
+        productStore.deleteProduct(id);
     }
-    productStore.deleteProduct(id);
     return res.json({ success: true, message: 'Product deleted successfully.' });
 }
 
@@ -410,18 +431,28 @@ export async function deleteProduct(req, res) {
 export async function updateStock(req, res) {
     const { id } = req.params;
     const { delta, stock } = req.body;
+    const numericId = Number(id);
 
     productStore.updateStock(id, { delta, stock });
 
     try {
-        if (stock !== undefined) {
-            await query('UPDATE products SET stock = ? WHERE id = ?', [stock, id]);
-        } else if (delta !== undefined) {
-            await query('UPDATE products SET stock = GREATEST(0, stock + ?) WHERE id = ?', [delta, id]);
-        }
-        const [updated] = await query('SELECT id, stock FROM products WHERE id = ?', [id]);
-        if (updated) {
-            return res.json({ success: true, stock: updated.stock });
+        const existing = await query(
+            'SELECT id, slug, stock FROM products WHERE id = ? OR slug = ?',
+            [!isNaN(numericId) ? numericId : 0, id]
+        );
+        if (existing.length) {
+            const targetId = existing[0].id;
+            if (stock !== undefined) {
+                await query('UPDATE products SET stock = ? WHERE id = ?', [stock, targetId]);
+            } else if (delta !== undefined) {
+                await query('UPDATE products SET stock = GREATEST(0, stock + ?) WHERE id = ?', [delta, targetId]);
+            }
+            const [updated] = await query('SELECT id, stock FROM products WHERE id = ?', [targetId]);
+            if (updated) {
+                productStore.updateStock(targetId, { stock: updated.stock });
+                productStore.updateStock(existing[0].slug, { stock: updated.stock });
+                return res.json({ success: true, stock: updated.stock });
+            }
         }
     } catch (err) {
         console.warn('DB error in updateStock:', err.message);

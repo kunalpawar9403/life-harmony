@@ -89,13 +89,13 @@ export async function listProducts(req, res, next) {
 
 export async function getProduct(req, res, next) {
     try {
-        const { id } = req.params; // slug
-        const rows = await query('SELECT * FROM products WHERE slug = ?', [id]);
+        const { id } = req.params; // slug or id
+        const numericId = Number(id);
+        const rows = await query(
+            'SELECT * FROM products WHERE slug = ? OR id = ?',
+            [id, !isNaN(numericId) ? numericId : 0]
+        );
         if (!rows.length) {
-            const fallback = productStore.getProductBySlug(id) || fallbackProducts.find(p => p.slug === id);
-            if (fallback) {
-                return res.json({ product: fallback, related: [] });
-            }
             return res.status(404).json({ message: 'Product not found' });
         }
         const [product] = await hydrate(rows);
@@ -117,9 +117,12 @@ export async function getProduct(req, res, next) {
 
         res.json({ product, related });
     } catch (err) {
-        console.warn('Database query failed in getProduct; returning fallback from productStore:', err.message);
-        const fallback = productStore.getProductBySlug(req.params.id) || fallbackProducts[0];
-        res.json({ product: fallback, related: [] });
+        console.warn('Database query failed in getProduct; checking memory store:', err.message);
+        const fallback = productStore.getProductBySlug(req.params.id);
+        if (fallback) {
+            return res.json({ product: fallback, related: [] });
+        }
+        res.status(404).json({ message: 'Product not found' });
     }
 }
 

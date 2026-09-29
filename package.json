@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd life-harmony && npm run dev",
+    "start": "node backend/server.js",
+    "test:e2e": "node test-e2e.js",
+    "test": "node test-e2e.js",
     "build": "cd life-harmony && npm install && npm run build"
   },
   "dependencies": {

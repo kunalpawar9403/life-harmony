@@ -98,14 +98,15 @@ export function getProductBySlug(slug) {
 }
 
 export function createProduct(productData) {
-    const id = Date.now();
+    const id = productData.id ? Number(productData.id) : (productData.dbId ? Number(productData.dbId) : Date.now());
+    const dbId = productData.dbId ? Number(productData.dbId) : id;
     const slug = productData.slug
         ? productData.slug.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-')
         : productData.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-') + '-' + String(id).slice(-4);
 
     const product = {
         id,
-        dbId: id,
+        dbId,
         slug,
         name: productData.name.trim(),
         subtitle: productData.subtitle ? productData.subtitle.trim() : '',
@@ -131,7 +132,7 @@ export function createProduct(productData) {
 
 export function updateProduct(id, updates) {
     const numericId = Number(id);
-    let existing = productsMap.get(numericId);
+    let existing = !isNaN(numericId) ? productsMap.get(numericId) : null;
     if (!existing) {
         existing = getProductBySlug(id);
     }
@@ -159,9 +160,13 @@ export function updateProduct(id, updates) {
 
 export function deleteProduct(id) {
     const numericId = Number(id);
-    const existing = productsMap.get(numericId) || getProductBySlug(id);
+    let existing = !isNaN(numericId) ? productsMap.get(numericId) : null;
+    if (!existing) {
+        existing = getProductBySlug(id);
+    }
     if (existing) {
         productsMap.delete(existing.id);
+        if (existing.dbId) productsMap.delete(existing.dbId);
         return true;
     }
     return false;
@@ -169,7 +174,10 @@ export function deleteProduct(id) {
 
 export function updateStock(id, deltaOrStock) {
     const numericId = Number(id);
-    const existing = productsMap.get(numericId) || getProductBySlug(id);
+    let existing = !isNaN(numericId) ? productsMap.get(numericId) : null;
+    if (!existing) {
+        existing = getProductBySlug(id);
+    }
     if (!existing) return 50;
 
     if (deltaOrStock.stock !== undefined) {
