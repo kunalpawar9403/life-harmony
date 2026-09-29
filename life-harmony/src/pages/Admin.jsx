@@ -29,6 +29,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/use-toast';
 import api from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 const CATEGORIES = [
     { id: 'all', label: 'All Categories' },
@@ -116,7 +117,18 @@ export default function Admin() {
             });
             setProducts(data.products || []);
         } catch (err) {
-            console.error('Failed to fetch products:', err);
+            console.warn('API error in fetchProducts, fetching directly from Supabase:', err.message);
+            try {
+                let q = supabase.from('products').select('*');
+                if (productCategory && productCategory !== 'all') q = q.eq('category', productCategory);
+                if (productSearch) q = q.ilike('name', `%${productSearch}%`);
+                const { data } = await q.order('id', { ascending: false });
+                if (data && data.length) {
+                    setProducts(data);
+                }
+            } catch (supaErr) {
+                console.error('Supabase admin products fallback failed:', supaErr.message);
+            }
         }
     }, [productCategory, productSearch]);
 

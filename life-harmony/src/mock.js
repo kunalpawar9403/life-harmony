@@ -4,6 +4,7 @@
 // If the database is offline or not yet connected in the cloud, it seamlessly falls back to the embedded catalog.
 
 import api from './lib/api';
+import { supabase } from './lib/supabase';
 
 // ---------------------------------------------------------------------------
 // 1. Static images used in decorative sections.
@@ -376,8 +377,78 @@ function filterFallback(params = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Async API helpers with seamless fallback.
+// 5. Async API helpers with Supabase cloud connection & seamless fallback.
 // ---------------------------------------------------------------------------
+async function fetchProductsFromSupabase(params = {}) {
+    try {
+        let q = supabase.from('products').select('*');
+        if (params.category && params.category !== 'all') {
+            q = q.eq('category', params.category);
+        }
+        if (params.maxPrice) {
+            q = q.lte('price', Number(params.maxPrice));
+        }
+        if (params.sort === 'price-asc') q = q.order('price', { ascending: true });
+        else if (params.sort === 'price-desc') q = q.order('price', { ascending: false });
+        else if (params.sort === 'name') q = q.order('name', { ascending: true });
+        else q = q.order('id', { ascending: true });
+
+        const { data, error } = await q;
+        if (error || !data || data.length === 0) return null;
+
+        const ids = data.map(p => p.id);
+        const [gRes, iRes, bRes, allGoals] = await Promise.all([
+            supabase.from('product_goals').select('product_id, goal_id'),
+            supabase.from('product_ingredients').select('*').in('product_id', ids).order('sort_order', { ascending: true }),
+            supabase.from('product_benefits').select('*').in('product_id', ids),
+            supabase.from('goals').select('id, slug'),
+        ]);
+
+        const goalIdToSlug = {};
+        allGoals.data?.forEach(g => { goalIdToSlug[g.id] = g.slug; });
+
+        const goalsMap = {}, ingMap = {}, benMap = {};
+        gRes.data?.forEach(g => {
+            const slug = goalIdToSlug[g.goal_id];
+            if (slug) (goalsMap[g.product_id] ||= []).push(slug);
+        });
+        iRes.data?.forEach(i => (ingMap[i.product_id] ||= []).push({ name: i.name, amount: i.amount, dv: i.dv }));
+        bRes.data?.forEach(b => (benMap[b.product_id] ||= []).push(b.text));
+
+        let results = data.map(p => ({
+            id: p.slug,
+            dbId: p.id,
+            slug: p.slug,
+            name: p.name,
+            subtitle: p.subtitle,
+            description: p.description,
+            price: Number(p.price),
+            originalPrice: p.original_price ? Number(p.original_price) : null,
+            image: p.image,
+            category: p.category,
+            stock: p.stock,
+            rating: Number(p.rating),
+            goals: goalsMap[p.id] || [],
+            ingredients: ingMap[p.id] || [],
+            benefits: benMap[p.id] || [],
+            reviews: [],
+        }));
+
+        if (params.goal && params.goal !== 'all') {
+            results = results.filter(p => p.goals.includes(params.goal));
+        }
+        if (params.q) {
+            const term = params.q.toLowerCase().trim();
+            results = results.filter(p => p.name.toLowerCase().includes(term) || (p.subtitle && p.subtitle.toLowerCase().includes(term)));
+        }
+
+        return results;
+    } catch (e) {
+        console.warn('Direct Supabase products fetch warning:', e.message);
+        return null;
+    }
+}
+
 export async function getProducts(params = {}) {
     try {
         const search = new URLSearchParams();
@@ -392,8 +463,14 @@ export async function getProducts(params = {}) {
             return data.products;
         }
     } catch (err) {
-        console.warn('API /products not reachable or database offline; using built-in catalog fallback:', err.message);
+        console.warn('API /products not reachable; fetching directly from Supabase...');
     }
+
+    const supaProducts = await fetchProductsFromSupabase(params);
+    if (supaProducts && supaProducts.length > 0) {
+        return supaProducts;
+    }
+
     return filterFallback(params);
 }
 
@@ -402,8 +479,72 @@ export async function getProduct(slug) {
         const { data } = await api.get(`/products/${slug}`);
         if (data?.product) return data;
     } catch (err) {
-        console.warn(`API /products/${slug} offline; using fallback:`, err.message);
+        console.warn(`API /products/${slug} offline; checking Supabase...`);
     }
+
+    try {
+        const numericId = Number(slug);
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .or(`slug.eq.${slug}${!isNaN(numericId) && numericId > 0 ? `,id.eq.${numericId}` : ''}`)
+            .limit(1);
+
+        if (!error && data && data.length > 0) {
+            const p = data[0];
+            const [gRes, iRes, bRes, rRes, allGoals] = await Promise.all([
+                supabase.from('product_goals').select('goal_id').eq('product_id', p.id),
+                supabase.from('product_ingredients').select('*').eq('product_id', p.id).order('sort_order', { ascending: true }),
+                supabase.from('product_benefits').select('*').eq('product_id', p.id),
+                supabase.from('product_reviews').select('*').eq('product_id', p.id).order('created_at', { ascending: false }),
+                supabase.from('goals').select('id, slug'),
+            ]);
+
+            const goalIdToSlug = {};
+            allGoals.data?.forEach(g => { goalIdToSlug[g.id] = g.slug; });
+            const productGoals = (gRes.data || []).map(g => goalIdToSlug[g.goal_id]).filter(Boolean);
+
+            const product = {
+                id: p.slug,
+                dbId: p.id,
+                slug: p.slug,
+                name: p.name,
+                subtitle: p.subtitle,
+                description: p.description,
+                price: Number(p.price),
+                originalPrice: p.original_price ? Number(p.original_price) : null,
+                image: p.image,
+                category: p.category,
+                stock: p.stock,
+                rating: Number(p.rating),
+                goals: productGoals,
+                ingredients: (iRes.data || []).map(i => ({ name: i.name, amount: i.amount, dv: i.dv })),
+                benefits: (bRes.data || []).map(b => b.text),
+                reviews: (rRes.data || []).map(r => ({
+                    id: r.id, name: r.name, rating: r.rating, title: r.title, text: r.text,
+                    date: (r.created_at || '').slice(0, 10),
+                })),
+            };
+
+            const { data: relData } = await supabase.from('products').select('*').eq('category', p.category).neq('id', p.id).limit(4);
+            const related = (relData || []).map(r => ({
+                id: r.slug,
+                dbId: r.id,
+                slug: r.slug,
+                name: r.name,
+                subtitle: r.subtitle,
+                price: Number(r.price),
+                image: r.image,
+                category: r.category,
+                rating: Number(r.rating),
+            }));
+
+            return { product, related };
+        }
+    } catch (e) {
+        console.warn('Direct Supabase single product error:', e.message);
+    }
+
     const product = fallbackProducts.find((p) => p.slug === slug || p.id === slug) || fallbackProducts[0];
     const related = fallbackProducts.filter((p) => p.slug !== product.slug && p.category === product.category).slice(0, 4);
     return { product, related };
@@ -415,9 +556,15 @@ export async function getGoals() {
         if (Array.isArray(data?.goals) && data.goals.length > 0) {
             return data.goals;
         }
-    } catch (err) {
-        console.warn('API /products/goals offline; using fallback:', err.message);
-    }
+    } catch (err) {}
+
+    try {
+        const { data } = await supabase.from('goals').select('slug, label').order('id', { ascending: true });
+        if (data && data.length) {
+            return [{ id: 'all', label: 'All' }, ...data.map(g => ({ id: g.slug, label: g.label }))];
+        }
+    } catch {}
+
     return fallbackGoals;
 }
 
@@ -434,9 +581,31 @@ export async function getBlogPosts(params = {}) {
         if (data?.posts && data.posts.length > 0) {
             return { featured: data.featured, posts: data.posts };
         }
-    } catch (err) {
-        console.warn('API /blog offline; using fallback:', err.message);
-    }
+    } catch (err) {}
+
+    try {
+        let q = supabase.from('blog_posts').select('*').order('published_at', { ascending: false });
+        if (params.category && params.category !== 'All') {
+            q = q.eq('category', params.category);
+        }
+        const { data } = await q;
+        if (data && data.length > 0) {
+            const posts = data.map(b => ({
+                id: b.slug,
+                slug: b.slug,
+                title: b.title,
+                category: b.category,
+                excerpt: b.excerpt,
+                image: b.image,
+                readTime: b.read_time,
+                date: b.published_at,
+                featured: !!b.is_featured,
+            }));
+            const featured = posts.find(p => p.featured) || posts[0];
+            return { featured, posts: posts.filter(p => !p.featured) };
+        }
+    } catch {}
+
     const featured = fallbackBlogPosts.find((b) => b.is_featured) || fallbackBlogPosts[0];
     return { featured, posts: fallbackBlogPosts };
 }
@@ -445,8 +614,28 @@ export async function getBlogPost(slug) {
     try {
         const { data } = await api.get(`/blog/${slug}`);
         if (data?.post) return data.post;
-    } catch (err) {
-        console.warn(`API /blog/${slug} offline; using fallback:`, err.message);
-    }
+    } catch (err) {}
+
+    try {
+        const { data, error } = await supabase.from('blog_posts').select('*').eq('slug', slug).limit(1);
+        if (!error && data && data.length > 0) {
+            const b = data[0];
+            let content = b.content;
+            if (typeof content === 'string') {
+                try { content = JSON.parse(content); } catch {}
+            }
+            return {
+                id: b.slug,
+                title: b.title,
+                category: b.category,
+                excerpt: b.excerpt,
+                image: b.image,
+                readTime: b.read_time,
+                date: b.published_at,
+                content,
+            };
+        }
+    } catch {}
+
     return fallbackBlogPosts.find((b) => b.slug === slug) || fallbackBlogPosts[0];
 }
