@@ -1,16 +1,7 @@
 import { pool, query } from '../config/database.js';
 import * as orderStore from '../services/orderStore.js';
+import * as productStore from '../services/productStore.js';
 import { fallbackProducts } from '../data/fallbackData.js';
-
-// In-memory store for product modifications during offline/serverless mode
-const memoryProducts = new Map();
-fallbackProducts.forEach(p => memoryProducts.set(p.id, {
-    ...p,
-    salesCount: 12,
-    stock: p.stock || 50,
-    price: Number(p.price),
-    originalPrice: p.original_price ? Number(p.original_price) : null,
-}));
 
 // Default users for admin view
 const memoryUsers = [
@@ -104,7 +95,7 @@ export async function getStats(_req, res) {
         const deliveredOrders = allOrders.filter(o => o.status === 'Delivered').length;
         const cancelledOrders = allOrders.filter(o => o.status === 'Cancelled').length;
 
-        const allProds = Array.from(memoryProducts.values());
+        const allProds = productStore.getAllProducts();
         const lowStock = allProds.filter(p => (Number(p.stock) || 0) < 15).length;
 
         // Group categories
@@ -224,28 +215,8 @@ export async function getProducts(req, res) {
 
         return res.json({ success: true, count: formatted.length, products: formatted });
     } catch (err) {
-        console.warn('DB error in admin getProducts, using memory catalog:', err.message);
-
-        let list = Array.from(memoryProducts.values());
-
-        if (category && category !== 'all') {
-            list = list.filter(p => p.category?.toLowerCase() === category.toLowerCase());
-        }
-
-        if (search) {
-            const q = search.toLowerCase().trim();
-            list = list.filter(p =>
-                p.name?.toLowerCase().includes(q) ||
-                p.subtitle?.toLowerCase().includes(q) ||
-                p.slug?.toLowerCase().includes(q)
-            );
-        }
-
-        if (sort === 'price_asc') list.sort((a, b) => a.price - b.price);
-        else if (sort === 'price_desc') list.sort((a, b) => b.price - a.price);
-        else if (sort === 'stock_asc') list.sort((a, b) => a.stock - b.stock);
-        else if (sort === 'sales_desc') list.sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0));
-
+        console.warn('DB error in admin getProducts, using productStore catalog:', err.message);
+        const list = productStore.getAllProducts(req.query);
         return res.json({ success: true, count: list.length, products: list });
     }
 }
@@ -315,7 +286,7 @@ export async function createProduct(req, res) {
             await conn.commit();
 
             const [created] = await query('SELECT * FROM products WHERE id = ?', [productId]);
-            memoryProducts.set(productId, { ...created, price: Number(created.price), goals, benefits });
+            productStore.createProduct({ ...created, price: Number(created.price), goals, benefits });
             return res.status(201).json({ success: true, product: created });
         } catch (err) {
             if (conn) await conn.rollback();
@@ -325,27 +296,7 @@ export async function createProduct(req, res) {
         }
     }
 
-    // Memory product fallback
-    const newId = Date.now();
-    const newProduct = {
-        id: newId,
-        slug,
-        name: name.trim(),
-        subtitle: subtitle.trim(),
-        description: description.trim(),
-        price: Number(price),
-        original_price: originalPrice ? Number(originalPrice) : null,
-        originalPrice: originalPrice ? Number(originalPrice) : null,
-        image: image.trim() || 'https://images.unsplash.com/photo-1664786908163-85ca46f85138?crop=entropy&cs=srgb&fm=jpg&q=85',
-        category,
-        stock: Number(stock) || 100,
-        rating: 5.0,
-        is_featured: isFeatured ? 1 : 0,
-        goals,
-        benefits,
-        salesCount: 0,
-    };
-    memoryProducts.set(newId, newProduct);
+    const newProduct = productStore.createProduct(req.body);
     return res.status(201).json({ success: true, product: newProduct });
 }
 
@@ -427,7 +378,7 @@ export async function updateProduct(req, res) {
                 await conn.commit();
                 const [updated] = await query('SELECT * FROM products WHERE id = ?', [id]);
                 if (updated) {
-                    memoryProducts.set(Number(id), { ...updated, price: Number(updated.price), goals, benefits });
+                    productStore.updateProduct(id, { ...updated, price: Number(updated.price), goals, benefits });
                     return res.json({ success: true, product: updated });
                 }
             }
@@ -439,25 +390,8 @@ export async function updateProduct(req, res) {
         }
     }
 
-    // Memory product update fallback
-    const numericId = Number(id);
-    const existingMem = memoryProducts.get(numericId) || Array.from(memoryProducts.values()).find(p => p.slug === id);
-    if (!existingMem) return res.status(404).json({ message: 'Product not found.' });
-
-    const updated = {
-        ...existingMem,
-        name: name !== undefined ? name : existingMem.name,
-        subtitle: subtitle !== undefined ? subtitle : existingMem.subtitle,
-        description: description !== undefined ? description : existingMem.description,
-        price: price !== undefined ? Number(price) : existingMem.price,
-        originalPrice: originalPrice !== undefined ? Number(originalPrice) : existingMem.originalPrice,
-        image: image !== undefined ? image : existingMem.image,
-        category: category !== undefined ? category : existingMem.category,
-        stock: stock !== undefined ? Number(stock) : existingMem.stock,
-        goals: goals !== undefined ? goals : existingMem.goals,
-        benefits: benefits !== undefined ? benefits : existingMem.benefits,
-    };
-    memoryProducts.set(existingMem.id, updated);
+    const updated = productStore.updateProduct(id, req.body);
+    if (!updated) return res.status(404).json({ message: 'Product not found.' });
     return res.json({ success: true, product: updated });
 }
 
@@ -469,7 +403,7 @@ export async function deleteProduct(req, res) {
     } catch (err) {
         console.warn('DB error in deleteProduct:', err.message);
     }
-    memoryProducts.delete(Number(id));
+    productStore.deleteProduct(id);
     return res.json({ success: true, message: 'Product deleted successfully.' });
 }
 
@@ -477,6 +411,8 @@ export async function deleteProduct(req, res) {
 export async function updateStock(req, res) {
     const { id } = req.params;
     const { delta, stock } = req.body;
+
+    productStore.updateStock(id, { delta, stock });
 
     try {
         if (stock !== undefined) {
@@ -486,22 +422,14 @@ export async function updateStock(req, res) {
         }
         const [updated] = await query('SELECT id, stock FROM products WHERE id = ?', [id]);
         if (updated) {
-            const mem = memoryProducts.get(Number(id));
-            if (mem) mem.stock = updated.stock;
             return res.json({ success: true, stock: updated.stock });
         }
     } catch (err) {
         console.warn('DB error in updateStock:', err.message);
     }
 
-    const mem = memoryProducts.get(Number(id));
-    if (mem) {
-        if (stock !== undefined) mem.stock = Math.max(0, Number(stock));
-        else if (delta !== undefined) mem.stock = Math.max(0, (mem.stock || 0) + Number(delta));
-        return res.json({ success: true, stock: mem.stock });
-    }
-
-    return res.json({ success: true, stock: Math.max(0, Number(stock || 50)) });
+    const currentStock = productStore.updateStock(id, {});
+    return res.json({ success: true, stock: currentStock });
 }
 
 export const updateProductStock = updateStock;

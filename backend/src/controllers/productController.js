@@ -1,5 +1,6 @@
 import { query } from '../config/database.js';
 import { getFallbackProducts, fallbackProducts, fallbackGoals } from '../data/fallbackData.js';
+import * as productStore from '../services/productStore.js';
 
 function mapProduct(row, { goals = [], ingredients = [], benefits = [], reviews = [] } = {}) {
     return {
@@ -81,8 +82,8 @@ export async function listProducts(req, res, next) {
         const items = await hydrate(rows);
         res.json({ products: items });
     } catch (err) {
-        console.warn('Database query failed in listProducts; returning fallback catalog:', err.message);
-        res.json({ products: getFallbackProducts(req.query) });
+        console.warn('Database query failed in listProducts; returning productStore catalog:', err.message);
+        res.json({ products: productStore.getAllProducts(req.query) });
     }
 }
 
@@ -91,7 +92,7 @@ export async function getProduct(req, res, next) {
         const { id } = req.params; // slug
         const rows = await query('SELECT * FROM products WHERE slug = ?', [id]);
         if (!rows.length) {
-            const fallback = fallbackProducts.find(p => p.slug === id);
+            const fallback = productStore.getProductBySlug(id) || fallbackProducts.find(p => p.slug === id);
             if (fallback) {
                 return res.json({ product: fallback, related: [] });
             }
@@ -116,8 +117,8 @@ export async function getProduct(req, res, next) {
 
         res.json({ product, related });
     } catch (err) {
-        console.warn('Database query failed in getProduct; returning fallback:', err.message);
-        const fallback = fallbackProducts.find(p => p.slug === req.params.id) || fallbackProducts[0];
+        console.warn('Database query failed in getProduct; returning fallback from productStore:', err.message);
+        const fallback = productStore.getProductBySlug(req.params.id) || fallbackProducts[0];
         res.json({ product: fallback, related: [] });
     }
 }
