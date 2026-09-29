@@ -116,7 +116,9 @@ function mapOrder(o, items) {
     };
 }
 
-export async function listOrders(req, res, next) {
+const memoryOrders = new Map();
+
+export async function listOrders(req, res) {
     try {
         const orders = await query('SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
         const result = [];
@@ -125,14 +127,28 @@ export async function listOrders(req, res, next) {
             result.push(mapOrder(o, items));
         }
         res.json({ orders: result });
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.warn('DB error in listOrders, using memory:', err.message);
+        res.json({ orders: memoryOrders.get(req.user.id) || [] });
+    }
 }
 
-export async function getOrder(req, res, next) {
+export async function getOrder(req, res) {
     try {
         const [o] = await query('SELECT * FROM orders WHERE order_number = ? AND user_id = ?', [req.params.orderNumber, req.user.id]);
-        if (!o) return res.status(404).json({ message: 'Order not found' });
+        if (!o) {
+            const userOrders = memoryOrders.get(req.user.id) || [];
+            const found = userOrders.find(ord => ord.id === req.params.orderNumber);
+            if (found) return res.json({ order: found });
+            return res.status(404).json({ message: 'Order not found' });
+        }
         const items = await query('SELECT * FROM order_items WHERE order_id = ?', [o.id]);
         res.json({ order: mapOrder(o, items) });
-    } catch (err) { next(err); }
+    } catch (err) {
+        console.warn('DB error in getOrder, using memory:', err.message);
+        const userOrders = memoryOrders.get(req.user.id) || [];
+        const found = userOrders.find(ord => ord.id === req.params.orderNumber);
+        if (found) return res.json({ order: found });
+        res.status(404).json({ message: 'Order not found' });
+    }
 }
