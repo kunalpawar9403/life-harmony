@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "node backend/server.js & cd life-harmony && npm run dev",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd life-harmony && npm run dev",
     "start": "node backend/server.js",
