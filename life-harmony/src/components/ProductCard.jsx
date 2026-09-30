@@ -7,9 +7,9 @@ import { useToast } from '../hooks/use-toast';
 
 export default function ProductCard({ product, compact = false }) {
     const { toast } = useToast();
-    const { addToCart, wishlist, toggleWishlist, setDrawerOpen } = useCart();
+    const { addToCart, wishlist, toggleWishlist, isInWishlist, setDrawerOpen } = useCart();
     const [justAdded, setJustAdded] = useState(false);
-    const isLiked = wishlist.includes(product.id);
+    const isLiked = isInWishlist ? isInWishlist(product) : wishlist.includes(product?.id);
 
     // Calculate or fallback rating
     const rating = product.reviews?.length
@@ -41,7 +41,7 @@ export default function ProductCard({ product, compact = false }) {
         e.preventDefault();
         e.stopPropagation();
         try {
-            await toggleWishlist(product.id);
+            await toggleWishlist(product);
         } catch (err) {
             toast({
                 title: 'Sign in required',
@@ -52,9 +52,12 @@ export default function ProductCard({ product, compact = false }) {
         }
     };
 
+    const productRoute = `/product/${product.slug || product.id}`;
+    const productImage = product.image || product.image1 || 'https://images.unsplash.com/photo-1664786908163-85ca46f85138?crop=entropy&cs=srgb&fm=jpg&q=85';
+
     return (
         <Link
-            to={`/product/${product.id}`}
+            to={productRoute}
             className="card-shadow-hover bg-white/90 backdrop-blur-md rounded-[20px] xs:rounded-[26px] p-2.5 xs:p-3.5 sm:p-4 md:p-5 flex flex-col relative group border border-white/90 transition-all duration-300"
         >
             {/* Top Badges / Wishlist */}
@@ -92,7 +95,7 @@ export default function ProductCard({ product, compact = false }) {
                 } flex items-center justify-center mb-2.5 sm:mb-4 rounded-[16px] xs:rounded-[20px] bg-gradient-to-b from-[#fbf5f7] to-[#f4e9ee] overflow-hidden relative`}
             >
                 <img
-                    src={product.image}
+                    src={productImage}
                     alt={product.name}
                     className="h-full w-full object-cover group-hover:scale-108 group-hover:-translate-y-1 transition-transform duration-500 ease-out"
                     loading="lazy"

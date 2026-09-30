@@ -8,7 +8,7 @@ import { useToast } from '../hooks/use-toast';
 
 export default function GreatOffer() {
     const { toast } = useToast();
-    const { addToCart, wishlist, toggleWishlist, setDrawerOpen } = useCart();
+    const { addToCart, wishlist, toggleWishlist, isInWishlist, setDrawerOpen } = useCart();
 
     const [offer, setOffer] = useState(greatOfferFallback);
     const [justAdded, setJustAdded] = useState(false);
@@ -49,7 +49,7 @@ export default function GreatOffer() {
         };
     }, []);
 
-    const isLiked = wishlist.includes(offer.id);
+    const isLiked = isInWishlist ? isInWishlist(offer) : wishlist.includes(offer?.id);
     const savings = offer.originalPrice ? (offer.originalPrice - offer.price).toFixed(2) : '7.00';
 
     const handleAdd = async () => {
@@ -82,7 +82,7 @@ export default function GreatOffer() {
 
     const handleWishlist = async () => {
         try {
-            await toggleWishlist(offer.id);
+            await toggleWishlist(offer);
         } catch (err) {
             toast({
                 title: 'Sign in required',

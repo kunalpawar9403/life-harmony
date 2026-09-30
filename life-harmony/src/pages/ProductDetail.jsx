@@ -25,7 +25,7 @@ import ProductCard from '../components/ProductCard';
 export default function ProductDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { addToCart, wishlist, toggleWishlist, setDrawerOpen } = useCart();
+    const { addToCart, wishlist, toggleWishlist, isInWishlist, setDrawerOpen } = useCart();
     const { toast } = useToast();
 
     const [product, setProduct] = useState(null); // null=loading, undefined=not found
@@ -82,7 +82,7 @@ export default function ProductDetail() {
         );
     }
 
-    const isLiked = wishlist.includes(product.id);
+    const isLiked = isInWishlist ? isInWishlist(product) : wishlist.includes(product?.id);
     const avgRating = product.reviews?.length
         ? (
             product.reviews.reduce((s, r) => s + r.rating, 0) /
@@ -118,7 +118,7 @@ export default function ProductDetail() {
 
     const handleWishlist = async () => {
         try {
-            await toggleWishlist(product.id);
+            await toggleWishlist(product);
         } catch (err) {
             toast({
                 title: 'Sign in required',

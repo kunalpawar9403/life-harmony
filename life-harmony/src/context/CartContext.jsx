@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import { useAuth } from './AuthContext';
+import { toast } from '../hooks/use-toast';
 
 const CartContext = createContext(null);
 
@@ -178,22 +179,88 @@ export function CartProvider({ children }) {
         }
     }, [isAuthenticated]);
 
-    // 5. Robust Wishlist Toggle (Supports guests and members)
+    // Helper to check if a product is in the wishlist (matches id, slug, or dbId)
+    const isInWishlist = useCallback(
+        (productOrId) => {
+            if (!productOrId) return false;
+            const isObj = typeof productOrId === 'object' && productOrId !== null;
+            const targetId = isObj ? (productOrId.id || productOrId.slug) : productOrId;
+            const targetSlug = isObj ? productOrId.slug : undefined;
+            const targetDbId = isObj ? productOrId.dbId : undefined;
+
+            return wishlistIds.some((wId) => {
+                if (!wId) return false;
+                const wStr = String(wId).toLowerCase().trim();
+                if (targetId && String(targetId).toLowerCase().trim() === wStr) return true;
+                if (targetSlug && String(targetSlug).toLowerCase().trim() === wStr) return true;
+                if (targetDbId && String(targetDbId).toLowerCase().trim() === wStr) return true;
+                return false;
+            });
+        },
+        [wishlistIds]
+    );
+
+    // 5. Robust Wishlist Toggle with instant Toast feedback (Supports guests and members)
     const toggleWishlist = useCallback(
-        async (id) => {
+        async (productOrId) => {
+            if (!productOrId) return { added: false };
+            const isObj = typeof productOrId === 'object' && productOrId !== null;
+            const targetId = isObj ? (productOrId.id || productOrId.slug) : productOrId;
+            const targetSlug = isObj ? productOrId.slug : undefined;
+            const targetDbId = isObj ? productOrId.dbId : undefined;
+            const targetName = isObj ? productOrId.name : undefined;
+
+            const isMatch = (wId) => {
+                if (!wId) return false;
+                const wStr = String(wId).toLowerCase().trim();
+                if (targetId && String(targetId).toLowerCase().trim() === wStr) return true;
+                if (targetSlug && String(targetSlug).toLowerCase().trim() === wStr) return true;
+                if (targetDbId && String(targetDbId).toLowerCase().trim() === wStr) return true;
+                return false;
+            };
+
+            const currentlyExists = wishlistIds.some(isMatch);
+            const willAdd = !currentlyExists;
+
             setWishlistIds((prev) => {
-                const exists = prev.includes(id);
-                return exists ? prev.filter((x) => x !== id) : [...prev, id];
+                if (prev.some(isMatch)) {
+                    return prev.filter((wId) => !isMatch(wId));
+                } else {
+                    return [...prev, targetId];
+                }
             });
 
-            if (isAuthenticated) {
+            // Instant Toast Feedback Popup
+            if (willAdd) {
+                toast({
+                    title: 'Saved to Wishlist',
+                    description: targetName
+                        ? `${targetName} has been added to your saved routines.`
+                        : 'Added to your saved routines.',
+                });
+            } else {
+                toast({
+                    title: 'Removed from Wishlist',
+                    description: targetName
+                        ? `${targetName} was removed from your saved routines.`
+                        : 'Item removed from your saved routines.',
+                });
+            }
+
+            if (isAuthenticated && targetId) {
                 try {
-                    await api.post(`/wishlist/toggle/${id}`);
+                    await api.post(`/wishlist/toggle/${targetId}`);
                 } catch {}
             }
+
+            return { added: willAdd };
         },
-        [isAuthenticated]
+        [wishlistIds, isAuthenticated]
     );
+
+    const setWishlist = useCallback((newList) => {
+        setWishlistIds(Array.isArray(newList) ? newList : []);
+    }, []);
 
     const cartCount = items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
     const subtotal = items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.price) || 0), 0);
@@ -210,6 +277,8 @@ export function CartProvider({ children }) {
                 updateQty,
                 clearCart,
                 toggleWishlist,
+                isInWishlist,
+                setWishlist,
                 cartCount,
                 subtotal,
                 refreshCart,

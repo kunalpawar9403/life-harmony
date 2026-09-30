@@ -41,10 +41,19 @@ export const greatOfferFallback = {
     subtitle: 'Vitamin D3+K2 + Organic Collagen Peptides',
     originalPrice: 2499.00,
     price: 1999.00,
+    image:
+        'https://images.unsplash.com/photo-1664786908163-85ca46f85138?crop=entropy&cs=srgb&fm=jpg&q=85',
     image1:
         'https://images.unsplash.com/photo-1664786908163-85ca46f85138?crop=entropy&cs=srgb&fm=jpg&q=85',
     image2:
         'https://images.unsplash.com/photo-1693996045899-7cf0ac0229c7?crop=entropy&cs=srgb&fm=jpg&q=85',
+    category: 'offer_set',
+    goals: ['beauty', 'immunity'],
+    stock: 20,
+    rating: 5.0,
+    benefits: ['Dual formula bundle', 'Immunity + skin glow synergy'],
+    ingredients: [],
+    reviews: [],
 };
 
 // ---------------------------------------------------------------------------
