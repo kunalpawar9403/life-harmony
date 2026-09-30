@@ -19,31 +19,35 @@ export async function register(req, res, next) {
         }
         const normalized = email.toLowerCase().trim();
 
-        try {
-            const existing = await query('SELECT id FROM users WHERE email = ?', [normalized]);
-            if (existing.length) return res.status(409).json({ message: 'An account with this email already exists.' });
-
-            const hash = await hashPassword(password);
-            const result = await query(
-                'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
-                [name.trim(), normalized, hash, 'customer']
-            );
-            const [user] = await query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [result.insertId]);
-
-            const token = signToken(user.id, user.role);
-            return res.status(201).json({ token, user: publicUser(user) });
-        } catch (dbErr) {
-            console.warn('DB error in register, using resilient memory store fallback:', dbErr.message);
-            if (memoryUsers.has(normalized)) {
-                return res.status(409).json({ message: 'An account with this email already exists.' });
-            }
-            const id = Date.now();
-            const newUser = { id, name: name.trim(), email: normalized, role: 'customer', password, created_at: new Date() };
-            memoryUsers.set(normalized, newUser);
-            const token = signToken(id, 'customer');
-            return res.status(201).json({ token, user: publicUser(newUser) });
+        const existing = await query('SELECT id FROM users WHERE email = ?', [normalized]);
+        if (existing && existing.length > 0) {
+            return res.status(409).json({ message: 'An account with this email already exists.' });
         }
-    } catch (err) { next(err); }
+
+        const hash = await hashPassword(password);
+        const result = await query(
+            'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?) RETURNING id, name, email, role, created_at',
+            [name.trim(), normalized, hash, 'customer']
+        );
+
+        let user = null;
+        if (Array.isArray(result) && result.length > 0 && result[0].id) {
+            user = result[0];
+        } else if (result.insertId) {
+            const [u] = await query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [result.insertId]);
+            user = u;
+        }
+
+        if (!user) {
+            throw new Error('User could not be saved to Supabase database.');
+        }
+
+        const token = signToken(user.id, user.role);
+        return res.status(201).json({ token, user: publicUser(user) });
+    } catch (err) {
+        console.error('Registration error in Supabase:', err);
+        return res.status(err.status || 500).json({ message: err.message || 'Registration failed. Please try again.' });
+    }
 }
 
 export async function login(req, res, next) {
@@ -51,50 +55,27 @@ export async function login(req, res, next) {
         const { email, password } = req.body;
         const normalized = (email || '').toLowerCase().trim();
 
-        let rows = [];
-        try {
-            rows = await query('SELECT * FROM users WHERE email = ?', [normalized]);
-        } catch (dbErr) {
-            console.warn('Database query failed in login, checking memory fallback:', dbErr.message);
-            const memUser = memoryUsers.get(normalized);
-            if (memUser && (memUser.password === password || password === 'admin123' || password === 'password123')) {
-                const token = signToken(memUser.id, memUser.role);
-                return res.json({ token, user: publicUser(memUser) });
-            }
-            if ((normalized === 'admin@lifeharmony.com' || normalized === 'admin@example.com') && (password === 'admin123' || password === 'password123')) {
-                const adminUser = { id: 3, name: 'Admin Life Harmony', email: 'admin@lifeharmony.com', role: 'admin', created_at: new Date() };
-                const token = signToken(adminUser.id, 'admin');
-                return res.json({ token, user: publicUser(adminUser) });
-            }
-            return res.status(401).json({ message: 'Invalid email or password.' });
+        if (!normalized || !password) {
+            return res.status(400).json({ message: 'Email and password are required.' });
         }
 
+        const rows = await query('SELECT * FROM users WHERE email = ?', [normalized]);
+
         if (!rows.length) {
-            const memUser = memoryUsers.get(normalized);
-            if (memUser && (memUser.password === password || password === 'admin123' || password === 'password123')) {
-                const token = signToken(memUser.id, memUser.role);
-                return res.json({ token, user: publicUser(memUser) });
-            }
-            if (normalized === 'admin@lifeharmony.com' && (password === 'admin123' || password === 'password123')) {
-                const adminUser = { id: 3, name: 'Admin Life Harmony', email: normalized, role: 'admin', created_at: new Date() };
-                const token = signToken(adminUser.id, 'admin');
-                return res.json({ token, user: publicUser(adminUser) });
-            }
             return res.status(401).json({ message: 'Invalid email or password.' });
         }
 
         const ok = await comparePassword(password, rows[0].password_hash);
         if (!ok) {
-            if (normalized === 'admin@lifeharmony.com' && (password === 'admin123' || password === 'password123')) {
-                const token = signToken(rows[0].id, rows[0].role || 'admin');
-                return res.json({ token, user: publicUser(rows[0]) });
-            }
             return res.status(401).json({ message: 'Invalid email or password.' });
         }
 
         const token = signToken(rows[0].id, rows[0].role);
-        res.json({ token, user: publicUser(rows[0]) });
-    } catch (err) { next(err); }
+        return res.json({ token, user: publicUser(rows[0]) });
+    } catch (err) {
+        console.error('Login error in Supabase:', err);
+        return res.status(500).json({ message: 'Login failed. Please try again.' });
+    }
 }
 
 export async function me(req, res) {

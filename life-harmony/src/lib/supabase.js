@@ -235,13 +235,15 @@ export async function supabaseSubmitContact({ name, email, subject, message }) {
     }
 }
 
+import bcrypt from 'bcryptjs';
+
 /**
- * Directly registers user in Supabase `users` table
+ * Directly registers user in Supabase `users` table with genuine bcrypt hash
  */
 export async function supabaseRegisterUser({ name, email, password }) {
     try {
         const cleanEmail = email.toLowerCase().trim();
-        // Check if user already exists
+        // Check if user already exists in Supabase
         const { data: existing } = await supabase
             .from('users')
             .select('id')
@@ -252,13 +254,15 @@ export async function supabaseRegisterUser({ name, email, password }) {
             throw new Error('An account with this email already exists.');
         }
 
+        const hashedPassword = bcrypt.hashSync(password, 10);
+
         const { data: newUser, error } = await supabase
             .from('users')
             .insert([
                 {
                     name: name.trim(),
                     email: cleanEmail,
-                    password_hash: `user_pass_${Date.now()}`,
+                    password_hash: hashedPassword,
                     role: 'customer',
                 },
             ])
@@ -274,14 +278,14 @@ export async function supabaseRegisterUser({ name, email, password }) {
 }
 
 /**
- * Authenticates user directly against Supabase `users` table
+ * Authenticates user directly against Supabase `users` table with bcrypt verification
  */
-export async function supabaseLoginUser({ email }) {
+export async function supabaseLoginUser({ email, password }) {
     try {
         const cleanEmail = email.toLowerCase().trim();
         const { data, error } = await supabase
             .from('users')
-            .select('id, name, email, role')
+            .select('id, name, email, role, password_hash')
             .eq('email', cleanEmail)
             .limit(1);
 
@@ -289,7 +293,20 @@ export async function supabaseLoginUser({ email }) {
             throw new Error('Invalid email or password.');
         }
 
-        return data[0];
+        const user = data[0];
+        if (password && user.password_hash) {
+            const matches = bcrypt.compareSync(password, user.password_hash);
+            if (!matches) {
+                throw new Error('Invalid email or password.');
+            }
+        }
+
+        return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+        };
     } catch (err) {
         console.error('supabaseLoginUser error:', err);
         throw err;
