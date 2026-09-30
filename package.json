@@ -27,5 +27,8 @@
     "mysql2": "^3.11.0",
     "pg": "^8.23.0",
     "razorpay": "^2.9.8"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
   }
 }

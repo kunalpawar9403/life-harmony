@@ -83,10 +83,17 @@ export default function Navbar() {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    // Focus search input when modal opens
+    // Focus search input and handle Escape key when modal opens
     useEffect(() => {
         if (searchOpen) {
             setTimeout(() => searchInputRef.current?.focus(), 100);
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    setSearchOpen(false);
+                }
+            };
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
         } else {
             setSearchQuery('');
             setSearchResults([]);
@@ -295,7 +302,12 @@ export default function Navbar() {
 
             {/* Quick Search Overlay Modal */}
             {searchOpen && (
-                <div className="fixed inset-0 z-[80] flex items-start justify-center pt-8 sm:pt-16 px-3 sm:px-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+                <div
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setSearchOpen(false);
+                    }}
+                    className="fixed inset-0 z-[80] flex items-start justify-center pt-8 sm:pt-16 px-3 sm:px-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
+                >
                     <div className="w-full max-w-xl max-h-[85vh] flex flex-col bg-white/98 backdrop-blur-2xl rounded-3xl shadow-2xl border border-black/10 overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="p-3.5 sm:p-4 border-b border-black/5 flex items-center gap-2.5 sm:gap-3">
                             <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#858590] shrink-0" />
@@ -372,12 +384,18 @@ export default function Navbar() {
                                     </div>
                                 </div>
                             ) : searchQuery ? (
-                                <div className="py-8 text-center">
-                                    <p className="text-sm text-[#858590]">No products found for "{searchQuery}"</p>
+                                <div className="py-10 text-center px-4">
+                                    <div className="w-12 h-12 rounded-full bg-[#f4edf2] flex items-center justify-center mx-auto mb-3 text-[#70707a]">
+                                        <Search className="w-5 h-5" />
+                                    </div>
+                                    <p className="text-sm font-semibold text-[#1c1c21]">No products found</p>
+                                    <p className="text-xs text-[#70707a] mt-1 max-w-xs mx-auto">
+                                        No matching supplements found for &ldquo;{searchQuery}&rdquo;. Try searching for Vitamins, Sleep, or Collagen.
+                                    </p>
                                     <Link
                                         to="/shop"
                                         onClick={() => setSearchOpen(false)}
-                                        className="inline-block mt-3 text-xs font-medium underline"
+                                        className="inline-block mt-4 px-5 py-2 rounded-full bg-[#1c1c21] text-white text-xs font-semibold hover:bg-black transition-colors"
                                     >
                                         Browse all shop items
                                     </Link>

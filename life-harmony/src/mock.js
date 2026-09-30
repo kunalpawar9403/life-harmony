@@ -468,7 +468,7 @@ export async function getProducts(params = {}) {
         });
         const qs = search.toString();
         const { data } = await api.get(`/products${qs ? `?${qs}` : ''}`);
-        if (Array.isArray(data?.products) && data.products.length > 0) {
+        if (Array.isArray(data?.products)) {
             return data.products;
         }
     } catch (err) {
@@ -488,6 +488,14 @@ export async function getProduct(slug) {
         const { data } = await api.get(`/products/${slug}`);
         if (data?.product) return data;
     } catch (err) {
+        if (err.response?.status === 404) {
+            const product = fallbackProducts.find((p) => p.slug === slug || p.id === slug);
+            if (!product) {
+                throw new Error('Product not found');
+            }
+            const related = fallbackProducts.filter((p) => p.slug !== product.slug && p.category === product.category).slice(0, 4);
+            return { product, related };
+        }
         console.warn(`API /products/${slug} offline; checking Supabase...`);
     }
 
@@ -554,7 +562,10 @@ export async function getProduct(slug) {
         console.warn('Direct Supabase single product error:', e.message);
     }
 
-    const product = fallbackProducts.find((p) => p.slug === slug || p.id === slug) || fallbackProducts[0];
+    const product = fallbackProducts.find((p) => p.slug === slug || p.id === slug);
+    if (!product) {
+        throw new Error('Product not found');
+    }
     const related = fallbackProducts.filter((p) => p.slug !== product.slug && p.category === product.category).slice(0, 4);
     return { product, related };
 }
@@ -615,15 +626,38 @@ export async function getBlogPosts(params = {}) {
         }
     } catch {}
 
-    const featured = fallbackBlogPosts.find((b) => b.is_featured) || fallbackBlogPosts[0];
-    return { featured, posts: fallbackBlogPosts };
+    const mappedFallback = fallbackBlogPosts.map((b) => ({
+        id: b.slug,
+        slug: b.slug,
+        ...b,
+    }));
+    const featured = mappedFallback.find((b) => b.is_featured) || mappedFallback[0];
+    return { featured, posts: mappedFallback };
 }
 
 export async function getBlogPost(slug) {
     try {
         const { data } = await api.get(`/blog/${slug}`);
         if (data?.post) return data.post;
-    } catch (err) {}
+    } catch (err) {
+        if (err.response?.status === 404) {
+            const fallback = fallbackBlogPosts.find((b) => b.slug === slug);
+            if (!fallback) {
+                throw new Error('Post not found');
+            }
+            return {
+                id: fallback.slug,
+                slug: fallback.slug,
+                title: fallback.title,
+                category: fallback.category,
+                excerpt: fallback.excerpt,
+                image: fallback.image,
+                readTime: fallback.read_time,
+                date: fallback.published_at,
+                content: fallback.content,
+            };
+        }
+    }
 
     try {
         const { data, error } = await supabase.from('blog_posts').select('*').eq('slug', slug).limit(1);
@@ -635,6 +669,7 @@ export async function getBlogPost(slug) {
             }
             return {
                 id: b.slug,
+                slug: b.slug,
                 title: b.title,
                 category: b.category,
                 excerpt: b.excerpt,
@@ -646,5 +681,19 @@ export async function getBlogPost(slug) {
         }
     } catch {}
 
-    return fallbackBlogPosts.find((b) => b.slug === slug) || fallbackBlogPosts[0];
+    const fallback = fallbackBlogPosts.find((b) => b.slug === slug);
+    if (!fallback) {
+        throw new Error('Post not found');
+    }
+    return {
+        id: fallback.slug,
+        slug: fallback.slug,
+        title: fallback.title,
+        category: fallback.category,
+        excerpt: fallback.excerpt,
+        image: fallback.image,
+        readTime: fallback.read_time,
+        date: fallback.published_at,
+        content: fallback.content,
+    };
 }

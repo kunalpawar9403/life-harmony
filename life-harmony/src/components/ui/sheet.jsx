@@ -31,7 +31,7 @@ const SheetContent = React.forwardRef(({ className, children, ...props }, ref) =
         <SheetPrimitive.Content
             ref={ref}
             className={cn(
-                'fixed z-[70] gap-4 bg-white shadow-2xl transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500 inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
+                'fixed z-[80] gap-4 bg-white shadow-2xl transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-300 data-[state=open]:duration-500 inset-y-0 right-0 h-full border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
                 className
             )}
             {...props}

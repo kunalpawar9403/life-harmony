@@ -909,6 +909,9 @@ function CheckoutInner() {
                                     <div className="bg-white rounded-2xl p-5 space-y-3">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <InputField
+                                                name="name"
+                                                id="shipping-name"
+                                                autoComplete="name"
                                                 icon={User}
                                                 placeholder="Full name"
                                                 value={shipping.name}
@@ -920,6 +923,9 @@ function CheckoutInner() {
                                                 }
                                             />
                                             <InputField
+                                                name="email"
+                                                id="shipping-email"
+                                                autoComplete="email"
                                                 icon={Mail}
                                                 placeholder="Email"
                                                 type="email"
@@ -933,6 +939,9 @@ function CheckoutInner() {
                                             />
                                         </div>
                                         <InputField
+                                            name="phone"
+                                            id="shipping-phone"
+                                            autoComplete="tel"
                                             icon={Phone}
                                             placeholder="Phone (optional)"
                                             value={shipping.phone}
@@ -944,6 +953,9 @@ function CheckoutInner() {
                                             }
                                         />
                                         <InputField
+                                            name="line1"
+                                            id="shipping-line1"
+                                            autoComplete="address-line1"
                                             icon={MapPin}
                                             placeholder="Street address"
                                             value={shipping.line1}
@@ -955,6 +967,9 @@ function CheckoutInner() {
                                             }
                                         />
                                         <InputField
+                                            name="line2"
+                                            id="shipping-line2"
+                                            autoComplete="address-line2"
                                             placeholder="Apartment, suite, etc. (optional)"
                                             value={shipping.line2}
                                             onChange={(v) =>
@@ -966,6 +981,9 @@ function CheckoutInner() {
                                         />
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                             <InputField
+                                                name="city"
+                                                id="shipping-city"
+                                                autoComplete="address-level2"
                                                 placeholder="City"
                                                 value={shipping.city}
                                                 onChange={(v) =>
@@ -976,6 +994,9 @@ function CheckoutInner() {
                                                 }
                                             />
                                             <InputField
+                                                name="state"
+                                                id="shipping-state"
+                                                autoComplete="address-level1"
                                                 placeholder="State"
                                                 value={shipping.state}
                                                 onChange={(v) =>
@@ -986,6 +1007,9 @@ function CheckoutInner() {
                                                 }
                                             />
                                             <InputField
+                                                name="zip"
+                                                id="shipping-zip"
+                                                autoComplete="postal-code"
                                                 placeholder="ZIP"
                                                 value={shipping.zip}
                                                 onChange={(v) =>
@@ -997,6 +1021,9 @@ function CheckoutInner() {
                                             />
                                         </div>
                                         <InputField
+                                            name="country"
+                                            id="shipping-country"
+                                            autoComplete="country-name"
                                             placeholder="Country"
                                             value={shipping.country}
                                             onChange={(v) =>
@@ -1477,13 +1504,24 @@ function InputField({
     onChange,
     type = 'text',
     maxLength,
+    name,
+    id,
+    autoComplete,
+    required = false,
+    'aria-label': ariaLabel,
 }) {
+    const inputId = id || (name ? `checkout-${name}` : undefined);
     return (
         <div className="relative">
             {Icon && (
-                <Icon className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a0a0]" />
+                <Icon className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#a0a0a0] pointer-events-none" />
             )}
             <input
+                id={inputId}
+                name={name}
+                autoComplete={autoComplete}
+                required={required}
+                aria-label={ariaLabel || placeholder}
                 type={type}
                 placeholder={placeholder}
                 value={value}

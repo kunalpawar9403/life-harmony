@@ -20,6 +20,7 @@ import Profile from './pages/Profile';
 import Checkout from './pages/Checkout';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
+import Footer from './components/Footer';
 import { Toaster } from './components/ui/toaster';
 
 function ScrollToTop() {
@@ -88,6 +89,7 @@ function AppLayout() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        {!isCheckoutRoute && <Footer />}
       </div>
       <CartDrawer />
       {!isCheckoutRoute && <MobileBottomNav />}
