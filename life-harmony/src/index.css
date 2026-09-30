@@ -5,11 +5,15 @@
 @layer base {
   * {
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
   }
   
   html {
     scroll-behavior: smooth;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
 
   body {
@@ -20,12 +24,34 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: #fcf6f8;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    touch-action: manipulation;
   }
 
   ::selection {
     background-color: #adc8f8;
     color: #1a1a1f;
   }
+
+  /* Prevent automatic iOS Safari zoom when focusing inputs on mobile */
+  @media screen and (max-width: 639px) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
+/* Hide scrollbar for smooth horizontal swipeable chips & tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Custom Scrollbar for Drawer & Page */

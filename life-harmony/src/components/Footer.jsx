@@ -16,9 +16,9 @@ export default function Footer() {
     };
 
     return (
-        <footer className="mt-14 rounded-[36px] px-6 sm:px-10 md:px-16 py-12 md:py-16 glass-panel border border-white/80 transition-all">
+        <footer className="mt-10 sm:mt-14 rounded-[26px] xs:rounded-[36px] px-4 xs:px-6 sm:px-10 md:px-16 py-8 sm:py-12 md:py-16 glass-panel border border-white/80 transition-all">
             {/* Value Guarantees Strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pb-12 border-b border-black/5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pb-8 sm:pb-12 border-b border-black/5">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[#adc8f8]/40 flex items-center justify-center shrink-0">
                         <Leaf className="w-5 h-5 text-[#1c1c21]" />
@@ -49,11 +49,11 @@ export default function Footer() {
             </div>
 
             {/* Main Footer Links & Newsletter */}
-            <div className="grid grid-cols-12 gap-8 pt-12">
+            <div className="grid grid-cols-12 gap-6 sm:gap-8 pt-8 sm:pt-12">
                 <div className="col-span-12 md:col-span-5">
-                    <Link to="/" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 rounded-full bg-[#1c1c21] flex items-center justify-center">
-                            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group">
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#1c1c21] flex items-center justify-center shrink-0">
+                            <svg viewBox="0 0 24 24" className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
                                 <circle cx="12" cy="12" r="3" />
                                 <line x1="12" y1="3" x2="12" y2="6" />
                                 <line x1="12" y1="18" x2="12" y2="21" />
@@ -62,17 +62,17 @@ export default function Footer() {
                             </svg>
                         </div>
                         <div className="leading-tight">
-                            <div className="font-display text-[15px] font-bold text-[#1c1c21]">Life</div>
-                            <div className="font-display text-[15px] font-bold text-[#1c1c21]">Harmony</div>
+                            <div className="font-display text-[14px] sm:text-[15px] font-bold text-[#1c1c21]">Life</div>
+                            <div className="font-display text-[14px] sm:text-[15px] font-bold text-[#1c1c21]">Harmony</div>
                         </div>
                     </Link>
-                    <p className="mt-4 max-w-[340px] text-[13px] leading-[1.65] text-[#555560]">
+                    <p className="mt-3 sm:mt-4 max-w-[340px] text-[12px] sm:text-[13px] leading-[1.65] text-[#555560]">
                         Bio-intelligent daily formulations created to align your energy, immunity, and cellular vitality with modern science.
                     </p>
 
                     {/* Newsletter Subscription */}
-                    <div className="mt-6 max-w-sm">
-                        <h5 className="text-xs font-bold uppercase tracking-wider text-[#1c1c21] mb-2">
+                    <div className="mt-5 sm:mt-6 max-w-sm">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-[#1c1c21] mb-1.5 sm:mb-2">
                             Join the Harmony Collective
                         </h5>
                         <p className="text-xs text-[#656570] mb-3">
@@ -84,21 +84,21 @@ export default function Footer() {
                                 <span>Welcome! Use code HARMONY15 at checkout.</span>
                             </div>
                         ) : (
-                            <form onSubmit={handleSubscribe} className="flex gap-2">
+                            <form onSubmit={handleSubscribe} className="flex flex-col xs:flex-row gap-2">
                                 <input
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Enter your email..."
                                     required
-                                    className="flex-1 h-10 px-4 rounded-full bg-white text-xs outline-none border border-black/10 focus:border-[#1c1c21]"
+                                    className="flex-1 h-11 xs:h-10 px-4 rounded-full bg-white text-xs outline-none border border-black/10 focus:border-[#1c1c21]"
                                 />
                                 <button
                                     type="submit"
-                                    className="btn-dark px-4 h-10 rounded-full text-xs font-semibold shrink-0 flex items-center gap-1"
+                                    className="btn-dark px-5 h-11 xs:h-10 rounded-full text-xs font-semibold shrink-0 flex items-center justify-center gap-1.5 touch-manipulation"
                                 >
                                     <span>Join</span>
-                                    <ArrowRight className="w-3 h-3" />
+                                    <ArrowRight className="w-3.5 h-3.5" />
                                 </button>
                             </form>
                         )}
@@ -106,8 +106,8 @@ export default function Footer() {
                 </div>
 
                 <div className="col-span-6 md:col-span-3 md:pl-6">
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-[#1c1c21] mb-4">Shop Collections</h4>
-                    <ul className="space-y-2.5 text-[13px] text-[#555560]">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-[#1c1c21] mb-3 sm:mb-4">Shop Collections</h4>
+                    <ul className="space-y-2 sm:space-y-2.5 text-[12px] sm:text-[13px] text-[#555560]">
                         <li><Link to="/shop" className="hover:text-[#1c1c21] transition-colors">Daily Vitamins</Link></li>
                         <li><Link to="/shop" className="hover:text-[#1c1c21] transition-colors">Dietary Supplements</Link></li>
                         <li><Link to="/shop" className="hover:text-[#1c1c21] transition-colors">Clinical Bundles &amp; Sets</Link></li>
@@ -117,8 +117,8 @@ export default function Footer() {
                 </div>
 
                 <div className="col-span-6 md:col-span-4">
-                    <h4 className="font-bold text-xs uppercase tracking-wider text-[#1c1c21] mb-4">Company &amp; Care</h4>
-                    <ul className="space-y-2.5 text-[13px] text-[#555560]">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-[#1c1c21] mb-3 sm:mb-4">Company &amp; Care</h4>
+                    <ul className="space-y-2 sm:space-y-2.5 text-[12px] sm:text-[13px] text-[#555560]">
                         <li><Link to="/about" className="hover:text-[#1c1c21] transition-colors">Our Scientific Board</Link></li>
                         <li><Link to="/blog" className="hover:text-[#1c1c21] transition-colors">Wellness Journal</Link></li>
                         <li><Link to="/contact" className="hover:text-[#1c1c21] transition-colors">Contact Care Team</Link></li>

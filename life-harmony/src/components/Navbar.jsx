@@ -122,13 +122,13 @@ export default function Navbar() {
     return (
         <header className="mb-3 sm:mb-5">
             {/* Main Navbar */}
-            <nav className="flex items-center justify-between">
+            <nav className="flex items-center justify-between gap-2">
                 {/* Logo */}
-                <Link to="/" className="flex items-center gap-3 group focus:outline-none">
-                    <div className="w-11 h-11 rounded-full bg-[#1c1c21] flex items-center justify-center transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
+                <Link to="/" className="flex items-center gap-2 sm:gap-3 group focus:outline-none shrink-0">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#1c1c21] flex items-center justify-center transition-all duration-300 group-hover:scale-105 group-hover:shadow-md shrink-0">
                         <svg
                             viewBox="0 0 24 24"
-                            className="w-5 h-5 text-white transition-transform group-hover:rotate-45 duration-500"
+                            className="w-4 h-4 sm:w-5 sm:h-5 text-white transition-transform group-hover:rotate-45 duration-500"
                             fill="none"
                             stroke="currentColor"
                             strokeWidth="1.8"
@@ -144,9 +144,9 @@ export default function Navbar() {
                             <line x1="16.3" y1="7.7" x2="18.4" y2="5.6" />
                         </svg>
                     </div>
-                    <div className="leading-none flex flex-col">
-                        <span className="font-display text-[15px] font-bold tracking-tight text-[#1c1c21]">Life</span>
-                        <span className="font-display text-[15px] font-bold tracking-tight text-[#1c1c21]">Harmony</span>
+                    <div className="leading-none flex flex-col whitespace-nowrap">
+                        <span className="font-display text-[13px] sm:text-[15px] font-bold tracking-tight text-[#1c1c21]">Life</span>
+                        <span className="font-display text-[13px] sm:text-[15px] font-bold tracking-tight text-[#1c1c21]">Harmony</span>
                     </div>
                 </Link>
 
@@ -169,21 +169,21 @@ export default function Navbar() {
                 </div>
 
                 {/* Right Action Icons */}
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
                     {/* Instant Search Button */}
                     <button
                         onClick={() => setSearchOpen(true)}
-                        className="w-11 h-11 rounded-full glass-pill flex items-center justify-center hover:scale-105 active:scale-95 transition-all text-[#1c1c21]"
+                        className="w-9 h-9 sm:w-11 sm:h-11 rounded-full glass-pill flex items-center justify-center hover:scale-105 active:scale-95 transition-all text-[#1c1c21] touch-manipulation"
                         aria-label="Search catalog"
                         title="Search supplements"
                     >
-                        <Search className="w-4 h-4" strokeWidth={1.9} />
+                        <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={1.9} />
                     </button>
 
-                    {/* Wishlist Button */}
+                    {/* Wishlist Button (Shown on desktop & tablet; accessible via mobile bottom bar on mobile) */}
                     <Link
                         to="/wishlist"
-                        className="relative w-11 h-11 rounded-full glass-pill flex items-center justify-center hover:scale-105 active:scale-95 transition-all text-[#1c1c21]"
+                        className="hidden sm:flex relative w-11 h-11 rounded-full glass-pill items-center justify-center hover:scale-105 active:scale-95 transition-all text-[#1c1c21]"
                         aria-label="Wishlist"
                     >
                         <Heart className="w-4 h-4" strokeWidth={1.9} />
@@ -197,12 +197,12 @@ export default function Navbar() {
                     {/* Cart Drawer Trigger */}
                     <button
                         onClick={() => setDrawerOpen(true)}
-                        className="relative w-11 h-11 rounded-full bg-[#1c1c21] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm"
+                        className="relative w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#1c1c21] text-white flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm touch-manipulation"
                         aria-label="Cart"
                     >
-                        <ShoppingCart className="w-4 h-4" strokeWidth={1.9} />
+                        <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={1.9} />
                         {cartCount > 0 && (
-                            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[#adc8f8] text-[#1c1c21] text-[10px] font-bold flex items-center justify-center shadow-xs">
+                            <span className="absolute -top-1 -right-1 min-w-[18px] sm:min-w-[20px] h-[18px] sm:h-[20px] px-1 rounded-full bg-[#adc8f8] text-[#1c1c21] text-[9px] sm:text-[10px] font-bold flex items-center justify-center shadow-xs">
                                 {cartCount}
                             </span>
                         )}
@@ -285,41 +285,41 @@ export default function Navbar() {
                     {/* Mobile Menu Toggle */}
                     <button
                         onClick={() => setMobileOpen((v) => !v)}
-                        className="md:hidden w-11 h-11 rounded-full glass-pill flex items-center justify-center text-[#1c1c21]"
+                        className="md:hidden w-9 h-9 sm:w-11 sm:h-11 rounded-full glass-pill flex items-center justify-center text-[#1c1c21] touch-manipulation"
                         aria-label="Menu"
                     >
-                        {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                        {mobileOpen ? <X className="w-4 h-4 sm:w-5 sm:h-5" /> : <Menu className="w-4 h-4 sm:w-5 sm:h-5" />}
                     </button>
                 </div>
             </nav>
 
             {/* Quick Search Overlay Modal */}
             {searchOpen && (
-                <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="w-full max-w-xl bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-black/10 overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-4 border-b border-black/5 flex items-center gap-3">
-                            <Search className="w-5 h-5 text-[#858590] shrink-0" />
+                <div className="fixed inset-0 z-[80] flex items-start justify-center pt-8 sm:pt-16 px-3 sm:px-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="w-full max-w-xl max-h-[85vh] flex flex-col bg-white/98 backdrop-blur-2xl rounded-3xl shadow-2xl border border-black/10 overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-3.5 sm:p-4 border-b border-black/5 flex items-center gap-2.5 sm:gap-3">
+                            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#858590] shrink-0" />
                             <input
                                 ref={searchInputRef}
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search by vitamin, supplement, or goal (e.g. immunity, sleep)..."
+                                placeholder="Search by vitamin, supplement, or goal..."
                                 className="w-full text-sm bg-transparent outline-none placeholder:text-[#9e9ea7]"
                             />
                             {searchQuery && (
                                 <button
                                     onClick={() => setSearchQuery('')}
-                                    className="p-1 rounded-full hover:bg-black/5 text-[#858590]"
+                                    className="p-1 rounded-full hover:bg-black/5 text-[#858590] touch-manipulation"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
                             )}
                             <button
                                 onClick={() => setSearchOpen(false)}
-                                className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f0e8ed] hover:bg-[#ebdbe7] text-[#2d2d33] transition-colors"
+                                className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[#f0e8ed] hover:bg-[#ebdbe7] text-[#2d2d33] transition-colors shrink-0 touch-manipulation"
                             >
-                                Esc
+                                Close
                             </button>
                         </div>
 

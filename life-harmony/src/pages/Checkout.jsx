@@ -731,19 +731,19 @@ function CheckoutInner() {
                 </Link>
             </div>
 
-            <section className="section-bg rounded-[32px] px-6 md:px-14 py-10 md:py-14">
-                <h1 className="font-display text-[36px] md:text-[56px] leading-[0.95] tracking-tight">
+            <section className="section-bg rounded-[24px] xs:rounded-[32px] px-4 xs:px-6 md:px-14 py-6 xs:py-8 md:py-14">
+                <h1 className="font-display text-[28px] xs:text-[36px] md:text-[56px] leading-[0.95] tracking-tight">
                     CHECKOUT
                 </h1>
 
-                <div className="flex items-center gap-2 md:gap-4 mt-8">
+                <div className="flex items-center gap-1.5 xs:gap-2 md:gap-4 mt-6 sm:mt-8">
                     {STEPS.map((s, i) => (
                         <div
                             key={s.id}
-                            className="flex items-center gap-2 md:gap-3 flex-1"
+                            className="flex items-center gap-1.5 xs:gap-2 md:gap-3 flex-1 min-w-0"
                         >
                             <div
-                                className={`w-10 h-10 rounded-full flex items-center justify-center text-[13px] font-semibold transition-colors ${i < currentStepIndex
+                                className={`w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-[13px] font-semibold transition-colors shrink-0 ${i < currentStepIndex
                                         ? 'bg-[#bbcffb] text-[#363636]'
                                         : i === currentStepIndex
                                             ? 'bg-[#363636] text-white'
@@ -751,13 +751,13 @@ function CheckoutInner() {
                                     }`}
                             >
                                 {i < currentStepIndex ? (
-                                    <Check className="w-4 h-4" />
+                                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 ) : (
                                     i + 1
                                 )}
                             </div>
                             <span
-                                className={`text-[12px] md:text-[13px] font-medium ${i <= currentStepIndex
+                                className={`text-[11px] xs:text-[12px] md:text-[13px] font-medium truncate ${i <= currentStepIndex
                                         ? 'text-[#363636]'
                                         : 'text-[#a0a0a0]'
                                     }`}
@@ -766,7 +766,7 @@ function CheckoutInner() {
                             </span>
                             {i < STEPS.length - 1 && (
                                 <div
-                                    className={`flex-1 h-[2px] ${i < currentStepIndex
+                                    className={`flex-1 h-[2px] min-w-[6px] ${i < currentStepIndex
                                             ? 'bg-[#363636]'
                                             : 'bg-[#363636]/15'
                                         }`}
@@ -777,11 +777,11 @@ function CheckoutInner() {
                 </div>
             </section>
 
-            <div className="grid grid-cols-12 gap-6 mt-8">
+            <div className="grid grid-cols-12 gap-6 mt-6 sm:mt-8">
                 <div className="col-span-12 md:col-span-7">
                     {step === 'shipping' && (
-                        <div className="section-bg rounded-[32px] p-6 md:p-10 space-y-6">
-                            <h2 className="font-display text-[28px] tracking-tight">
+                        <div className="section-bg rounded-[24px] xs:rounded-[32px] p-4 xs:p-6 md:p-10 space-y-5 xs:space-y-6">
+                            <h2 className="font-display text-[24px] xs:text-[28px] tracking-tight">
                                 Shipping information
                             </h2>
 
@@ -1007,8 +1007,8 @@ function CheckoutInner() {
                     )}
 
                     {step === 'payment' && (
-                        <div className="section-bg rounded-[32px] p-6 md:p-10 space-y-6">
-                            <h2 className="font-display text-[28px] tracking-tight">
+                        <div className="section-bg rounded-[24px] xs:rounded-[32px] p-4 xs:p-6 md:p-10 space-y-5 xs:space-y-6">
+                            <h2 className="font-display text-[24px] xs:text-[28px] tracking-tight">
                                 Payment
                             </h2>
 
@@ -1138,8 +1138,8 @@ function CheckoutInner() {
                     )}
 
                     {step === 'review' && (
-                        <div className="section-bg rounded-[32px] p-6 md:p-10 space-y-6">
-                            <h2 className="font-display text-[28px] tracking-tight">
+                        <div className="section-bg rounded-[24px] xs:rounded-[32px] p-4 xs:p-6 md:p-10 space-y-5 xs:space-y-6">
+                            <h2 className="font-display text-[24px] xs:text-[28px] tracking-tight">
                                 Review your order
                             </h2>
 
@@ -1321,10 +1321,10 @@ function CheckoutInner() {
 
             {/* Razorpay Test Sandbox Simulator Modal */}
             {showRzpSimulator && activeRzpOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-gray-100">
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-3 xs:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-gray-100 max-h-[90vh] flex flex-col">
                         {/* Header */}
-                        <div className="bg-[#0c1f38] text-white p-6 relative">
+                        <div className="bg-[#0c1f38] text-white p-5 xs:p-6 relative shrink-0">
                             <button
                                 onClick={() => setShowRzpSimulator(false)}
                                 className="absolute right-4 top-4 text-white/60 hover:text-white transition-colors"
@@ -1346,7 +1346,7 @@ function CheckoutInner() {
                         </div>
 
                         {/* Body */}
-                        <div className="p-6 space-y-4">
+                        <div className="p-4 xs:p-6 space-y-4 overflow-y-auto">
                             <div className="bg-[#eff6ff] border border-[#bfdbfe] rounded-2xl p-4 text-[13px] text-[#1e40af]">
                                 <div className="font-semibold flex items-center gap-1.5 mb-1 text-[#2563eb]">
                                     <Sparkles className="w-4 h-4" />

@@ -68,13 +68,13 @@ export default function Login() {
     };
 
     return (
-        <div className="relative overflow-hidden mt-2 rounded-[36px] glass-panel px-6 md:px-14 py-14 md:py-20 border border-white/70 shadow-glass">
+        <div className="relative overflow-hidden mt-2 rounded-[24px] xs:rounded-[36px] glass-panel px-4 xs:px-6 md:px-14 py-8 xs:py-14 md:py-20 border border-white/70 shadow-glass">
             <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 rounded-full bg-gradient-to-br from-[#bbcffb]/30 to-[#f6d2de]/20 blur-3xl pointer-events-none" />
             <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-80 h-80 rounded-full bg-gradient-to-tr from-[#f6d2de]/25 to-[#bbcffb]/15 blur-3xl pointer-events-none" />
 
             <div className="max-w-[460px] mx-auto relative z-10">
                 {/* Mode Selector Pill */}
-                <div className="flex p-1 rounded-full bg-white/70 border border-white/90 shadow-sm max-w-[280px] mx-auto mb-8">
+                <div className="flex p-1 rounded-full bg-white/70 border border-white/90 shadow-sm max-w-[280px] mx-auto mb-6 xs:mb-8">
                     <button
                         type="button"
                         onClick={() => { setMode('login'); setError(''); }}
@@ -100,10 +100,10 @@ export default function Login() {
                 </div>
 
                 <div className="text-center">
-                    <h1 className="font-display text-[38px] md:text-[52px] leading-[0.95] tracking-tight text-[#1a1a1a]">
+                    <h1 className="font-display text-[28px] xs:text-[38px] md:text-[52px] leading-[0.98] xs:leading-[0.95] tracking-tight text-[#1a1a1a]">
                         {mode === 'login' ? 'Welcome Back' : 'Create Account'}
                     </h1>
-                    <p className="text-[14px] text-[#666] mt-3">
+                    <p className="text-xs xs:text-[14px] text-[#666] mt-2 xs:mt-3">
                         {mode === 'login'
                             ? 'Access your saved protocols, order tracking, and member pricing.'
                             : 'Join our daily wellness collective and unlock personalized recommendations.'}

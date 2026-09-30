@@ -54,6 +54,8 @@ function AppLayout() {
     );
   }
 
+  const isCheckoutRoute = pathname.startsWith('/checkout');
+
   // Consumer E-Commerce Storefront layout (no admin elements)
   return (
     <div className="App min-h-screen bg-gradient-to-b from-[#fdf7f9] via-[#f7ebf1] to-[#f4e2ec] text-[#1c1c21] relative overflow-x-hidden selection:bg-[#adc8f8] selection:text-[#18181b]">
@@ -63,7 +65,7 @@ function AppLayout() {
       <div className="fixed bottom-[10%] left-[10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-[#f3e1ea]/50 to-transparent blur-[130px] pointer-events-none -z-10" />
 
       <ScrollToTop />
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-28 md:pb-6">
+      <div className={`max-w-[1440px] mx-auto px-3 xs:px-4 sm:px-6 lg:px-8 py-3 sm:py-6 ${isCheckoutRoute ? 'pb-8' : 'pb-24 sm:pb-28 md:pb-6'}`}>
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
@@ -88,7 +90,7 @@ function AppLayout() {
         </Routes>
       </div>
       <CartDrawer />
-      <MobileBottomNav />
+      {!isCheckoutRoute && <MobileBottomNav />}
     </div>
   );
 }

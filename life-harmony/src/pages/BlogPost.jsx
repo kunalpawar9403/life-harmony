@@ -88,20 +88,20 @@ export default function BlogPost() {
             </div>
 
             {/* Main Article Container */}
-            <article className="rounded-[36px] glass-panel px-6 md:px-16 py-12 md:py-16 border border-white/70 shadow-glass">
+            <article className="rounded-[24px] xs:rounded-[36px] glass-panel px-4 xs:px-6 md:px-16 py-8 xs:py-12 md:py-16 border border-white/70 shadow-glass">
                 <div className="max-w-3xl mx-auto">
                     {/* Category & Badge */}
                     <div className="flex items-center gap-3">
-                        <span className="px-3 py-1 rounded-full bg-[#bbcffb]/50 text-[#1a1a1a] text-[11px] font-bold uppercase tracking-wider">
+                        <span className="px-3 py-1 rounded-full bg-[#bbcffb]/50 text-[#1a1a1a] text-[10px] xs:text-[11px] font-bold uppercase tracking-wider">
                             {post.category}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#777]">
+                        <span className="inline-flex items-center gap-1 text-[10px] xs:text-[11px] font-medium text-[#777]">
                             <Sparkles className="w-3 h-3 text-[#f6d2de]" /> Verified Editorial
                         </span>
                     </div>
 
                     {/* Title */}
-                    <h1 className="font-display text-[36px] md:text-[56px] leading-[1.05] tracking-tight mt-5 text-[#1a1a1a]">
+                    <h1 className="font-display text-[26px] xs:text-[36px] md:text-[56px] leading-[1.08] xs:leading-[1.05] tracking-tight mt-4 xs:mt-5 text-[#1a1a1a]">
                         {post.title}
                     </h1>
 

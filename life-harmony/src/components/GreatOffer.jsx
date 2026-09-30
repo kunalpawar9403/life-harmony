@@ -94,14 +94,14 @@ export default function GreatOffer() {
     };
 
     return (
-        <section className="mt-12">
+        <section className="mt-8 sm:mt-12 overflow-hidden">
             {/* Animated Marquee Banner */}
-            <div className="marquee py-6 overflow-hidden">
+            <div className="marquee py-3 sm:py-6 overflow-hidden">
                 <div className="marquee-content">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <span
                             key={i}
-                            className="font-display text-[48px] sm:text-[68px] md:text-[88px] leading-none tracking-tight whitespace-nowrap text-[#1c1c21]/90"
+                            className="font-display text-[32px] xs:text-[48px] sm:text-[68px] md:text-[88px] leading-none tracking-tight whitespace-nowrap text-[#1c1c21]/90"
                         >
                             GREAT OFFER &nbsp;•
                         </span>
@@ -111,7 +111,7 @@ export default function GreatOffer() {
                     {Array.from({ length: 8 }).map((_, i) => (
                         <span
                             key={i}
-                            className="font-display text-[48px] sm:text-[68px] md:text-[88px] leading-none tracking-tight whitespace-nowrap text-[#1c1c21]/90"
+                            className="font-display text-[32px] xs:text-[48px] sm:text-[68px] md:text-[88px] leading-none tracking-tight whitespace-nowrap text-[#1c1c21]/90"
                         >
                             GREAT OFFER &nbsp;•
                         </span>
@@ -120,14 +120,14 @@ export default function GreatOffer() {
             </div>
 
             {/* Bundle Showcase Card */}
-            <div className="section-bg rounded-[36px] px-6 sm:px-10 md:px-16 py-10 sm:py-14 md:py-18 grid grid-cols-12 gap-8 items-center transition-all">
+            <div className="section-bg rounded-[26px] xs:rounded-[36px] px-4 xs:px-6 sm:px-10 md:px-16 py-8 sm:py-14 md:py-18 grid grid-cols-12 gap-6 sm:gap-8 items-center transition-all overflow-hidden">
                 {/* Left Offer Details */}
                 <div className="col-span-12 md:col-span-4 order-2 md:order-1">
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold uppercase tracking-wider">
+                    <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">
+                        <span className="px-2.5 xs:px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] xs:text-[11px] font-bold uppercase tracking-wider">
                             Save ₹{savings} Today
                         </span>
-                        <div className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#656570]">
+                        <div className="inline-flex items-center gap-1 text-[10px] xs:text-[11px] font-semibold text-[#656570]">
                             <Clock className="w-3.5 h-3.5" />
                             <span>
                                 {String(timeLeft.hours).padStart(2, '0')}:
@@ -137,28 +137,28 @@ export default function GreatOffer() {
                         </div>
                     </div>
 
-                    <h3 className="font-display text-[26px] sm:text-[34px] leading-tight text-[#1c1c21]">
+                    <h3 className="font-display text-[22px] xs:text-[26px] sm:text-[34px] leading-tight text-[#1c1c21]">
                         {offer.name}
                     </h3>
-                    <p className="text-[13px] text-[#656570] mt-2">
+                    <p className="text-[12px] sm:text-[13px] text-[#656570] mt-1.5 sm:mt-2">
                         {offer.subtitle}
                     </p>
 
                     {/* Pricing */}
-                    <div className="mt-6 flex items-baseline gap-3">
-                        <span className="text-[17px] text-[#9a9aa5] line-through font-medium">
+                    <div className="mt-4 sm:mt-6 flex items-baseline gap-2.5 sm:gap-3 flex-wrap">
+                        <span className="text-[15px] sm:text-[17px] text-[#9a9aa5] line-through font-medium">
                             ₹{Number(offer.originalPrice).toFixed(2)}
                         </span>
-                        <span className="font-display text-[36px] sm:text-[42px] font-bold text-[#1c1c21]">
+                        <span className="font-display text-[28px] xs:text-[36px] sm:text-[42px] font-bold text-[#1c1c21]">
                             ₹{Number(offer.price).toFixed(2)}
                         </span>
-                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                        <span className="text-[11px] sm:text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
                             Best Value
                         </span>
                     </div>
 
                     {/* Key Perks */}
-                    <ul className="mt-4 space-y-2 text-[12px] text-[#40404a]">
+                    <ul className="mt-3 sm:mt-4 space-y-1.5 sm:space-y-2 text-[11px] xs:text-[12px] text-[#40404a]">
                         <li className="flex items-center gap-2">
                             <span className="w-4 h-4 rounded-full bg-emerald-500/15 text-emerald-700 flex items-center justify-center shrink-0">
                                 <Check className="w-2.5 h-2.5" />
@@ -174,11 +174,11 @@ export default function GreatOffer() {
                     </ul>
 
                     {/* Actions */}
-                    <div className="mt-7 flex items-center gap-3">
+                    <div className="mt-5 sm:mt-7 flex items-center gap-2.5 sm:gap-3">
                         <button
                             onClick={handleAdd}
                             disabled={justAdded}
-                            className={`btn-dark px-7 h-12 rounded-full text-sm font-semibold flex items-center gap-2 transition-all shadow-md active:scale-95 ${
+                            className={`btn-dark flex-1 xs:flex-initial px-5 xs:px-7 h-11 sm:h-12 rounded-full text-xs xs:text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 touch-manipulation ${
                                 justAdded ? 'bg-emerald-600' : ''
                             }`}
                         >
@@ -192,7 +192,7 @@ export default function GreatOffer() {
                         </button>
                         <button
                             onClick={handleWishlist}
-                            className="w-12 h-12 rounded-full glass-pill flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                            className="w-11 h-11 sm:w-12 sm:h-12 rounded-full glass-pill flex items-center justify-center hover:scale-105 active:scale-95 transition-all shrink-0 touch-manipulation"
                             aria-label="Wishlist bundle"
                         >
                             <Heart
@@ -206,23 +206,23 @@ export default function GreatOffer() {
                 </div>
 
                 {/* Center Showcase Pedestal with Dual Bottles */}
-                <div className="col-span-12 md:col-span-4 relative min-h-[340px] md:min-h-[440px] flex items-end justify-center order-1 md:order-2">
+                <div className="col-span-12 md:col-span-4 relative min-h-[260px] xs:min-h-[300px] md:min-h-[440px] flex items-end justify-center order-1 md:order-2 overflow-hidden py-4 sm:py-0">
                     <div
-                        className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[300px] sm:w-[360px] h-[300px] sm:h-[360px] rounded-t-full pointer-events-none"
+                        className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[240px] xs:w-[300px] sm:w-[360px] h-[240px] xs:h-[300px] sm:h-[360px] rounded-t-full pointer-events-none"
                         style={{
                             background:
                                 'radial-gradient(ellipse at 50% 60%, rgba(244, 201, 215, 0.45) 0%, rgba(220, 230, 255, 0.3) 60%, transparent 100%)',
                         }}
                     />
-                    <div className="relative z-10 flex items-end justify-center gap-3 pb-6">
-                        <div className="w-32 sm:w-38 md:w-42 h-52 sm:h-60 md:h-68 rounded-[24px] overflow-hidden bg-white shadow-card-hover border border-white/80 transform -rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <div className="relative z-10 flex items-end justify-center gap-2 xs:gap-3 pb-2 sm:pb-6">
+                        <div className="w-26 xs:w-32 sm:w-38 md:w-42 h-44 xs:h-52 sm:h-60 md:h-68 rounded-[20px] xs:rounded-[24px] overflow-hidden bg-white shadow-card-hover border border-white/80 transform -rotate-3 hover:rotate-0 transition-transform duration-500 shrink-0">
                             <img
                                 src={offer.image1}
                                 alt="Supplement 1"
                                 className="w-full h-full object-cover"
                             />
                         </div>
-                        <div className="w-32 sm:w-38 md:w-42 h-52 sm:h-60 md:h-68 rounded-[24px] overflow-hidden bg-white shadow-card-hover border border-white/80 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+                        <div className="w-26 xs:w-32 sm:w-38 md:w-42 h-44 xs:h-52 sm:h-60 md:h-68 rounded-[20px] xs:rounded-[24px] overflow-hidden bg-white shadow-card-hover border border-white/80 transform rotate-3 hover:rotate-0 transition-transform duration-500 shrink-0">
                             <img
                                 src={offer.image2}
                                 alt="Supplement 2"

@@ -64,29 +64,29 @@ export default function Contact() {
     return (
         <div className="mt-2 space-y-8">
             {/* Header Banner */}
-            <section className="relative overflow-hidden rounded-[36px] glass-panel px-6 md:px-14 py-12 md:py-16 border border-white/70 shadow-glass">
+            <section className="relative overflow-hidden rounded-[24px] xs:rounded-[36px] glass-panel px-4 xs:px-6 md:px-14 py-8 xs:py-12 md:py-16 border border-white/70 shadow-glass">
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 rounded-full bg-gradient-to-br from-[#bbcffb]/30 to-[#f6d2de]/20 blur-3xl pointer-events-none" />
 
                 <div className="relative z-10 max-w-2xl">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-[#363636]/10 text-[11px] font-semibold uppercase tracking-wider text-[#363636] mb-4 shadow-sm">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-[#363636]/10 text-[10px] xs:text-[11px] font-semibold uppercase tracking-wider text-[#363636] mb-3 xs:mb-4 shadow-sm">
                         <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span>Advisory Specialists Online</span>
                     </div>
 
-                    <h1 className="font-display text-[42px] md:text-[68px] leading-[0.95] tracking-tight text-[#1a1a1a]">
+                    <h1 className="font-display text-[30px] xs:text-[42px] md:text-[68px] leading-[0.98] xs:leading-[0.95] tracking-tight text-[#1a1a1a]">
                         CONNECT WITH US
                     </h1>
-                    <p className="mt-4 text-[14px] md:text-[15px] text-[#555] leading-relaxed max-w-[500px]">
+                    <p className="mt-3 xs:mt-4 text-[13px] xs:text-[14px] md:text-[15px] text-[#555] leading-relaxed max-w-[500px]">
                         Need guidance choosing the right botanical protocol, tracking an existing delivery, or inquiring about wholesale? We are here to support your routine.
                     </p>
                 </div>
             </section>
 
             {/* Content Grid */}
-            <section className="grid grid-cols-12 gap-8 items-start">
+            <section className="grid grid-cols-12 gap-6 xs:gap-8 items-start">
                 {/* Form Column */}
                 <div className="col-span-12 md:col-span-7">
-                    <div className="rounded-[36px] glass-panel p-8 md:p-12 border border-white/70 shadow-glass">
+                    <div className="rounded-[24px] xs:rounded-[36px] glass-panel p-4 xs:p-8 md:p-12 border border-white/70 shadow-glass">
                         {submitted ? (
                             <div className="text-center py-12 space-y-4">
                                 <div className="w-20 h-20 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mx-auto mb-2 text-emerald-700 shadow-sm animate-scale">

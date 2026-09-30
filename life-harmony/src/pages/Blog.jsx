@@ -42,30 +42,30 @@ export default function Blog() {
     return (
         <div className="mt-2 space-y-8">
             {/* Header Banner */}
-            <section className="relative overflow-hidden rounded-[32px] glass-panel px-6 md:px-14 py-12 md:py-16 border border-white/60 shadow-glass">
+            <section className="relative overflow-hidden rounded-[24px] xs:rounded-[32px] glass-panel px-4 xs:px-6 md:px-14 py-8 xs:py-12 md:py-16 border border-white/60 shadow-glass">
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 rounded-full bg-gradient-to-br from-[#bbcffb]/30 to-[#f6d2de]/20 blur-3xl pointer-events-none" />
                 
                 <div className="relative z-10 max-w-2xl">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#363636]/10 text-[11px] font-semibold uppercase tracking-wider text-[#363636] mb-4 shadow-sm">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-[#363636]/10 text-[10px] xs:text-[11px] font-semibold uppercase tracking-wider text-[#363636] mb-3 xs:mb-4 shadow-sm">
                         <BookOpen className="w-3.5 h-3.5 text-[#363636]" />
                         <span>The Journal of Wellness</span>
                     </div>
 
-                    <h1 className="font-display text-[42px] md:text-[68px] leading-[0.95] tracking-tight text-[#1a1a1a]">
+                    <h1 className="font-display text-[30px] xs:text-[42px] md:text-[68px] leading-[0.98] xs:leading-[0.95] tracking-tight text-[#1a1a1a]">
                         THE SCIENCE & SOUL OF HARMONY
                     </h1>
-                    <p className="mt-4 text-[14px] md:text-[15px] text-[#555] leading-relaxed max-w-[520px]">
+                    <p className="mt-3 xs:mt-4 text-[13px] xs:text-[14px] md:text-[15px] text-[#555] leading-relaxed max-w-[520px]">
                         Deep-dives into cellular nutrition, circadian health, bioavailable botanical formulations, and daily mindfulness rituals.
                     </p>
 
-                    <div className="relative mt-8 max-w-[440px]">
+                    <div className="relative mt-6 xs:mt-8 max-w-[440px]">
                         <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#888]" />
                         <input
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Search articles, ingredients, routines..."
-                            className="w-full h-12 rounded-full bg-white/95 pl-11 pr-4 text-sm text-[#1a1a1a] placeholder:text-[#999] border border-[#363636]/10 shadow-sm outline-none focus:ring-2 focus:ring-[#bbcffb] focus:border-transparent transition-all"
+                            className="w-full h-11 xs:h-12 rounded-full bg-white/95 pl-11 pr-4 text-xs xs:text-sm text-[#1a1a1a] placeholder:text-[#999] border border-[#363636]/10 shadow-sm outline-none focus:ring-2 focus:ring-[#bbcffb] focus:border-transparent transition-all"
                         />
                     </div>
                 </div>
@@ -73,16 +73,16 @@ export default function Blog() {
 
             {/* Featured Article */}
             {showFeatured && (
-                <section className="rounded-[32px] glass-panel p-6 md:p-10 border border-white/70 shadow-glass hover:shadow-card-hover transition-all duration-300">
-                    <div className="grid grid-cols-12 gap-8 items-center">
+                <section className="rounded-[24px] xs:rounded-[32px] glass-panel p-4 xs:p-6 md:p-10 border border-white/70 shadow-glass hover:shadow-card-hover transition-all duration-300">
+                    <div className="grid grid-cols-12 gap-6 xs:gap-8 items-center">
                         <div className="col-span-12 md:col-span-7">
-                            <div className="rounded-[24px] overflow-hidden aspect-[16/10] bg-white relative group shadow-sm">
+                            <div className="rounded-[20px] xs:rounded-[24px] overflow-hidden aspect-[16/10] bg-white relative group shadow-sm">
                                 <img
                                     src={featured.image}
                                     alt={featured.title}
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                                 />
-                                <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] font-medium tracking-wide">
+                                <div className="absolute top-3 left-3 xs:top-4 xs:left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] xs:text-[11px] font-medium tracking-wide">
                                     <Sparkles className="w-3 h-3 text-[#bbcffb]" />
                                     <span>Editor's Pick</span>
                                 </div>
@@ -90,19 +90,19 @@ export default function Blog() {
                         </div>
                         <div className="col-span-12 md:col-span-5 flex flex-col justify-center">
                             <div className="flex items-center gap-2">
-                                <span className="px-2.5 py-1 rounded-full bg-[#bbcffb]/40 text-[#1a1a1a] text-[11px] font-semibold uppercase tracking-wider">
+                                <span className="px-2.5 py-1 rounded-full bg-[#bbcffb]/40 text-[#1a1a1a] text-[10px] xs:text-[11px] font-semibold uppercase tracking-wider">
                                     {featured.category}
                                 </span>
                             </div>
 
-                            <h2 className="font-display text-[30px] md:text-[42px] leading-[1.05] tracking-tight mt-4 text-[#1a1a1a]">
+                            <h2 className="font-display text-[24px] xs:text-[30px] md:text-[42px] leading-[1.08] xs:leading-[1.05] tracking-tight mt-3 xs:mt-4 text-[#1a1a1a]">
                                 {featured.title}
                             </h2>
-                            <p className="mt-4 text-[14px] leading-relaxed text-[#666]">
+                            <p className="mt-3 xs:mt-4 text-xs xs:text-[14px] leading-relaxed text-[#666]">
                                 {featured.excerpt}
                             </p>
                             
-                            <div className="flex items-center gap-3 mt-6 text-[12px] text-[#777]">
+                            <div className="flex items-center gap-3 mt-4 xs:mt-6 text-[11px] xs:text-[12px] text-[#777]">
                                 <span className="font-medium text-[#444]">{featured.date}</span>
                                 <span>•</span>
                                 <span className="inline-flex items-center gap-1">
@@ -113,7 +113,7 @@ export default function Blog() {
 
                             <Link
                                 to={`/blog/${featured.id}`}
-                                className="btn-dark inline-flex items-center justify-center gap-2 mt-8 px-7 h-12 rounded-full text-sm font-semibold tracking-wide w-fit shadow-md hover:shadow-lg transition-all"
+                                className="btn-dark inline-flex items-center justify-center gap-2 mt-6 xs:mt-8 px-6 xs:px-7 h-11 xs:h-12 rounded-full text-xs xs:text-sm font-semibold tracking-wide w-full xs:w-fit shadow-md hover:shadow-lg transition-all"
                             >
                                 Read article <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </Link>
@@ -124,12 +124,12 @@ export default function Blog() {
 
             {/* Category Navigation & Article Grid */}
             <section className="space-y-6">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
                     {categories.map((c) => (
                         <button
                             key={c}
                             onClick={() => setCategory(c)}
-                            className={`px-5 h-10 rounded-full text-[13px] font-medium transition-all ${
+                            className={`px-4 xs:px-5 h-9 xs:h-10 rounded-full text-xs xs:text-[13px] font-medium shrink-0 whitespace-nowrap transition-all ${
                                 category === c
                                     ? 'bg-[#1a1a1a] text-white shadow-md'
                                     : 'bg-white/80 hover:bg-white text-[#555] hover:text-[#1a1a1a] border border-[#363636]/10'

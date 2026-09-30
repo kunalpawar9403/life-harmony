@@ -38,27 +38,27 @@ export default function NewArrivals() {
     return (
         <section
             id="products"
-            className="section-bg rounded-[36px] px-6 sm:px-10 md:px-16 py-12 md:py-20 mt-10 transition-all"
+            className="section-bg rounded-[26px] xs:rounded-[36px] px-4 xs:px-6 sm:px-10 md:px-16 py-8 sm:py-12 md:py-20 mt-8 sm:mt-10 transition-all"
         >
-            <div className="grid grid-cols-12 gap-6 items-end">
+            <div className="grid grid-cols-12 gap-5 sm:gap-6 items-end">
                 <div className="col-span-12 md:col-span-5">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1c1c21]/5 text-[11px] font-semibold text-[#1c1c21] mb-3">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1c1c21]/5 text-[11px] font-semibold text-[#1c1c21] mb-2 sm:mb-3">
                         <Sparkles className="w-3 h-3 text-[#1c1c21]" /> Fresh Batch Releases
                     </div>
-                    <h2 className="font-display text-[38px] sm:text-[52px] md:text-[64px] leading-[0.95] tracking-tight text-[#1c1c21]">
+                    <h2 className="font-display text-[30px] xs:text-[38px] sm:text-[52px] md:text-[64px] leading-[0.98] sm:leading-[0.95] tracking-tight text-[#1c1c21]">
                         NEW ARRIVALS
                     </h2>
-                    <p className="mt-4 max-w-[380px] text-[15px] font-medium text-[#50505a]">
+                    <p className="mt-2.5 sm:mt-4 max-w-[380px] text-[13px] sm:text-[15px] font-medium text-[#50505a]">
                         Targeted nutritional excellence to nourish your daily baseline.
                     </p>
                 </div>
 
                 <div className="col-span-12 md:col-span-7 flex flex-col justify-between">
                     {/* Category Switcher Tabs */}
-                    <div className="flex items-center gap-2 p-1.5 rounded-full glass-pill self-start md:self-end shadow-xs">
+                    <div className="flex items-center gap-1.5 p-1 rounded-full glass-pill self-start md:self-end shadow-xs max-w-full overflow-x-auto no-scrollbar">
                         <button
                             onClick={() => setTab('vitamins')}
-                            className={`px-5 h-9 sm:h-10 rounded-full text-[13px] font-semibold transition-all duration-200 ${
+                            className={`px-3.5 xs:px-5 h-8 xs:h-9 sm:h-10 rounded-full text-xs xs:text-[13px] font-semibold transition-all duration-200 whitespace-nowrap touch-manipulation ${
                                 tab === 'vitamins'
                                     ? 'bg-[#1c1c21] text-white shadow-sm'
                                     : 'text-[#60606a] hover:text-[#1c1c21]'
@@ -68,7 +68,7 @@ export default function NewArrivals() {
                         </button>
                         <button
                             onClick={() => setTab('supplements')}
-                            className={`px-5 h-9 sm:h-10 rounded-full text-[13px] font-semibold transition-all duration-200 ${
+                            className={`px-3.5 xs:px-5 h-8 xs:h-9 sm:h-10 rounded-full text-xs xs:text-[13px] font-semibold transition-all duration-200 whitespace-nowrap touch-manipulation ${
                                 tab === 'supplements'
                                     ? 'bg-[#1c1c21] text-white shadow-sm'
                                     : 'text-[#60606a] hover:text-[#1c1c21]'
@@ -78,11 +78,11 @@ export default function NewArrivals() {
                         </button>
                     </div>
 
-                    <div className="mt-6 md:text-right">
-                        <p className="text-[13px] leading-[1.65] max-w-[420px] text-[#656570] md:ml-auto">
+                    <div className="mt-4 sm:mt-6 md:text-right">
+                        <p className="text-[12px] sm:text-[13px] leading-[1.6] max-w-[420px] text-[#656570] md:ml-auto">
                             Strengthen immunity, elevate cellular energy, and sustain mental focus with zero artificial compromises.
                         </p>
-                        <div className="mt-3">
+                        <div className="mt-2 sm:mt-3">
                             <Link
                                 to="/shop"
                                 className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#1c1c21] hover:opacity-75 transition-opacity group"
@@ -95,40 +95,42 @@ export default function NewArrivals() {
                 </div>
             </div>
 
-            {/* Goal Filter Chips */}
-            <div className="mt-8 pt-6 border-t border-black/5 flex flex-wrap items-center gap-2">
-                <span className="text-[11px] uppercase tracking-wider font-bold text-[#80808a] mr-2">
-                    Filter by goal:
-                </span>
-                {goals.map((g) => (
-                    <button
-                        key={g.id}
-                        onClick={() => setActiveGoal(g.id)}
-                        className={`px-3.5 h-8 rounded-full text-[12px] font-semibold transition-all duration-200 ${
-                            activeGoal === g.id
-                                ? 'bg-[#1c1c21] text-white shadow-xs'
-                                : 'bg-white/80 hover:bg-white text-[#454550] border border-black/5 hover:border-black/15 shadow-2xs'
-                        }`}
-                    >
-                        {g.label}
-                    </button>
-                ))}
+            {/* Goal Filter Chips (Smooth horizontal scroll on mobile) */}
+            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-black/5">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+                    <span className="text-[10px] xs:text-[11px] uppercase tracking-wider font-bold text-[#80808a] mr-1 shrink-0">
+                        Filter:
+                    </span>
+                    {goals.map((g) => (
+                        <button
+                            key={g.id}
+                            onClick={() => setActiveGoal(g.id)}
+                            className={`px-3 xs:px-3.5 h-7 xs:h-8 rounded-full text-[11px] xs:text-[12px] font-semibold transition-all duration-200 shrink-0 touch-manipulation whitespace-nowrap ${
+                                activeGoal === g.id
+                                    ? 'bg-[#1c1c21] text-white shadow-xs'
+                                    : 'bg-white/80 hover:bg-white text-[#454550] border border-black/5 hover:border-black/15 shadow-2xs'
+                            }`}
+                        >
+                            {g.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Product Grid or Skeleton Loader */}
             {loading ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 xs:gap-4 md:gap-6 mt-6 sm:mt-8">
                     {[1, 2, 3, 4].map((n) => (
-                        <div key={n} className="rounded-[26px] bg-white/70 p-4 border border-white/80">
-                            <div className="h-44 rounded-[20px] skeleton-shimmer mb-4" />
-                            <div className="h-4 w-3/4 rounded-full skeleton-shimmer mb-2" />
-                            <div className="h-3 w-1/2 rounded-full skeleton-shimmer mb-4" />
+                        <div key={n} className="rounded-[20px] xs:rounded-[26px] bg-white/70 p-3 xs:p-4 border border-white/80">
+                            <div className="h-36 xs:h-44 rounded-[16px] xs:rounded-[20px] skeleton-shimmer mb-3 xs:mb-4" />
+                            <div className="h-3.5 xs:h-4 w-3/4 rounded-full skeleton-shimmer mb-2" />
+                            <div className="h-2.5 xs:h-3 w-1/2 rounded-full skeleton-shimmer mb-3" />
                             <div className="h-8 w-full rounded-full skeleton-shimmer" />
                         </div>
                     ))}
                 </div>
             ) : products.length === 0 ? (
-                <div className="mt-10 rounded-[26px] bg-white/80 backdrop-blur-md p-12 text-center border border-black/5">
+                <div className="mt-8 rounded-[24px] bg-white/80 backdrop-blur-md p-8 sm:p-12 text-center border border-black/5">
                     <p className="text-sm font-medium text-[#60606a]">
                         No products match this goal yet.
                     </p>
@@ -143,7 +145,7 @@ export default function NewArrivals() {
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 xs:gap-4 md:gap-6 mt-6 sm:mt-8">
                     {products.map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}

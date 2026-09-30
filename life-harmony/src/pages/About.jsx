@@ -47,34 +47,34 @@ export default function About() {
     return (
         <div className="mt-2 space-y-8">
             {/* Hero Section */}
-            <section className="relative overflow-hidden rounded-[36px] glass-panel px-6 md:px-14 py-14 md:py-20 border border-white/70 shadow-glass">
+            <section className="relative overflow-hidden rounded-[24px] xs:rounded-[36px] glass-panel px-4 xs:px-6 md:px-14 py-8 xs:py-12 md:py-20 border border-white/70 shadow-glass">
                 <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 rounded-full bg-gradient-to-br from-[#bbcffb]/30 to-[#f6d2de]/30 blur-3xl pointer-events-none" />
 
-                <div className="grid grid-cols-12 gap-10 items-center relative z-10">
+                <div className="grid grid-cols-12 gap-8 md:gap-10 items-center relative z-10">
                     <div className="col-span-12 md:col-span-7">
-                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-[#363636]/10 text-[11px] font-semibold uppercase tracking-wider text-[#363636] mb-5 shadow-sm">
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/80 border border-[#363636]/10 text-[10px] xs:text-[11px] font-semibold uppercase tracking-wider text-[#363636] mb-4 sm:mb-5 shadow-sm">
                             <Sparkles className="w-3.5 h-3.5 text-[#bbcffb]" />
                             <span>The Life Harmony Philosophy</span>
                         </div>
 
-                        <h1 className="font-display text-[44px] md:text-[74px] leading-[0.93] tracking-tight text-[#1a1a1a]">
+                        <h1 className="font-display text-[32px] xs:text-[44px] md:text-[74px] leading-[0.96] xs:leading-[0.93] tracking-tight text-[#1a1a1a]">
                             WELLNESS,<br />SIMPLIFIED &<br />AMPLIFIED.
                         </h1>
 
-                        <p className="mt-6 text-[15px] md:text-[16px] leading-relaxed text-[#555] max-w-[540px]">
+                        <p className="mt-4 xs:mt-6 text-[14px] xs:text-[15px] md:text-[16px] leading-relaxed text-[#555] max-w-[540px]">
                             Life Harmony was born from a fundamental belief: modern health shouldn't require deciphering cryptic labels, synthetic megadoses, or empty marketing claims. We combine the purest botanical compounds with modern cellular science to help you thrive in high definition.
                         </p>
 
-                        <div className="mt-8 flex flex-wrap gap-4">
+                        <div className="mt-6 xs:mt-8 flex flex-col sm:flex-row gap-3 sm:gap-4">
                             <Link
                                 to="/shop"
-                                className="btn-dark inline-flex px-8 h-12 rounded-full text-sm font-semibold tracking-wide items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                                className="btn-dark inline-flex justify-center px-6 xs:px-8 h-12 rounded-full text-xs xs:text-sm font-semibold tracking-wide items-center gap-2 shadow-md hover:shadow-lg transition-all"
                             >
                                 Explore Formulas <ArrowRight className="w-4 h-4" />
                             </Link>
                             <Link
                                 to="/contact"
-                                className="inline-flex px-7 h-12 rounded-full text-sm font-semibold tracking-wide items-center border border-[#363636]/20 bg-white/60 hover:bg-white text-[#1a1a1a] transition-all shadow-sm"
+                                className="inline-flex justify-center px-5 xs:px-7 h-12 rounded-full text-xs xs:text-sm font-semibold tracking-wide items-center border border-[#363636]/20 bg-white/60 hover:bg-white text-[#1a1a1a] transition-all shadow-sm"
                             >
                                 Contact Our Advisory Team
                             </Link>
@@ -83,7 +83,7 @@ export default function About() {
 
                     <div className="col-span-12 md:col-span-5">
                         <div className="relative">
-                            <div className="rounded-[30px] overflow-hidden aspect-[4/5] bg-white shadow-xl border border-white/60 group">
+                            <div className="rounded-[22px] xs:rounded-[30px] overflow-hidden aspect-[4/5] bg-white shadow-xl border border-white/60 group">
                                 <img
                                     src={blogImages.woman}
                                     alt="Life Harmony founder"
@@ -91,12 +91,12 @@ export default function About() {
                                 />
                             </div>
 
-                            {/* Floating Quote Card */}
-                            <div className="absolute -bottom-6 -left-6 md:-left-8 bg-white/95 backdrop-blur-md rounded-2xl p-5 border border-white/80 shadow-card-hover max-w-[280px]">
-                                <div className="text-[12px] italic text-[#444] leading-snug">
+                            {/* Quote Card (Clean flow on mobile, floating on tablet/desktop) */}
+                            <div className="relative mt-3 sm:mt-0 sm:absolute sm:-bottom-6 sm:-left-6 md:-left-8 bg-white/95 backdrop-blur-md rounded-2xl p-4 xs:p-5 border border-white/80 shadow-card-hover max-w-full sm:max-w-[280px]">
+                                <div className="text-xs italic text-[#444] leading-snug">
                                     "When you give your body high-potency, biologically matched nutrients, vitality is simply the natural outcome."
                                 </div>
-                                <div className="mt-2 text-[11px] font-bold text-[#1a1a1a] uppercase tracking-wider">
+                                <div className="mt-2 text-[10px] xs:text-[11px] font-bold text-[#1a1a1a] uppercase tracking-wider">
                                     Elena Vance · Founder
                                 </div>
                             </div>
@@ -106,13 +106,13 @@ export default function About() {
             </section>
 
             {/* Stats Bar */}
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-2.5 xs:gap-4">
                 {stats.map((s) => (
-                    <div key={s.label} className="rounded-[24px] glass-panel p-6 text-center border border-white/70 shadow-sm">
-                        <div className="font-display text-[32px] md:text-[42px] tracking-tight text-[#1a1a1a]">
+                    <div key={s.label} className="rounded-[20px] xs:rounded-[24px] glass-panel p-4 xs:p-6 text-center border border-white/70 shadow-sm">
+                        <div className="font-display text-[26px] xs:text-[32px] md:text-[42px] tracking-tight text-[#1a1a1a]">
                             {s.value}
                         </div>
-                        <div className="text-[12px] uppercase tracking-wider text-[#666] font-medium mt-1">
+                        <div className="text-[10px] xs:text-[12px] uppercase tracking-wider text-[#666] font-medium mt-1">
                             {s.label}
                         </div>
                     </div>
@@ -120,15 +120,15 @@ export default function About() {
             </section>
 
             {/* Values Section */}
-            <section className="rounded-[36px] glass-panel px-6 md:px-14 py-14 md:py-20 border border-white/70 shadow-glass">
+            <section className="rounded-[24px] xs:rounded-[36px] glass-panel px-4 xs:px-6 md:px-14 py-8 xs:py-14 md:py-20 border border-white/70 shadow-glass">
                 <div className="max-w-xl">
-                    <span className="text-[11px] uppercase tracking-widest text-[#777] font-semibold">
+                    <span className="text-[10px] xs:text-[11px] uppercase tracking-widest text-[#777] font-semibold">
                         Our Guiding Principles
                     </span>
-                    <h2 className="font-display text-[34px] md:text-[52px] tracking-tight mt-2 text-[#1a1a1a]">
+                    <h2 className="font-display text-[26px] xs:text-[34px] md:text-[52px] tracking-tight mt-2 text-[#1a1a1a]">
                         SCIENCE WITHOUT COMPROMISE
                     </h2>
-                    <p className="mt-3 text-[14px] text-[#666] leading-relaxed">
+                    <p className="mt-2 xs:mt-3 text-xs xs:text-[14px] text-[#666] leading-relaxed">
                         Six non-negotiable benchmarks govern every single ingredient, capsule, and batch we produce.
                     </p>
                 </div>
