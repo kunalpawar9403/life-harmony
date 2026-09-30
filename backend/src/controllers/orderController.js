@@ -3,7 +3,7 @@ import * as orderStore from '../services/orderStore.js';
 
 export async function createOrder(req, res) {
     let conn = null;
-    const userId = req.user?.id || 1;
+    const userId = req.user?.id || null;
     const {
         shippingAddress,
         payment,
@@ -194,11 +194,18 @@ function mapOrder(o, items) {
 }
 
 export async function listOrders(req, res) {
-    const userId = req.user?.id || 1;
-    const memoryOrders = orderStore.getUserOrders(userId);
+    const userId = req.user?.id;
+    const userEmail = (req.user?.email || '').toLowerCase().trim();
+    if (!userId && !userEmail) {
+        return res.json({ success: true, count: 0, orders: [] });
+    }
+    const memoryOrders = userId ? orderStore.getUserOrders(userId) : [];
 
     try {
-        const orders = await query(`SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC`, [userId]);
+        const orders = await query(
+            `SELECT * FROM orders WHERE (user_id = ? OR LOWER(ship_email) = ?) ORDER BY created_at DESC`,
+            [userId || null, userEmail]
+        );
         
         const dbResult = [];
         for (const o of orders) {

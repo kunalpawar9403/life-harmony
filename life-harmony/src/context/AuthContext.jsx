@@ -23,8 +23,14 @@ export function AuthProvider({ children }) {
 
     const [orders, setOrders] = useState(() => {
         try {
-            const raw = localStorage.getItem('lh_user_orders');
-            return raw ? JSON.parse(raw) : [];
+            const rawUser = localStorage.getItem('lh_user');
+            const parsedUser = rawUser ? JSON.parse(rawUser) : null;
+            if (parsedUser?.id || parsedUser?.email) {
+                const userKey = `lh_orders_${parsedUser.id || parsedUser.email}`;
+                const raw = localStorage.getItem(userKey);
+                return raw ? JSON.parse(raw) : [];
+            }
+            return [];
         } catch {
             return [];
         }
@@ -37,12 +43,16 @@ export function AuthProvider({ children }) {
         if (token && !user) {
             api.get('/auth/me')
                 .then(({ data }) => {
-                    setUser(data.user);
-                    localStorage.setItem('lh_user', JSON.stringify(data.user));
+                    const u = data.user || data;
+                    setUser(u);
+                    localStorage.setItem('lh_user', JSON.stringify(u));
                 })
                 .catch(() => {
                     localStorage.removeItem('lh_token');
                     localStorage.removeItem('lh_user');
+                    localStorage.removeItem('lh_user_orders');
+                    setUser(null);
+                    setOrders([]);
                 });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,6 +61,8 @@ export function AuthProvider({ children }) {
     const persist = (token, u) => {
         localStorage.setItem('lh_token', token);
         localStorage.setItem('lh_user', JSON.stringify(u));
+        // Reset in-memory orders so previous account orders are never displayed
+        setOrders([]);
         setUser(u);
     };
 
@@ -97,8 +109,13 @@ export function AuthProvider({ children }) {
     const logout = useCallback(() => {
         localStorage.removeItem('lh_token');
         localStorage.removeItem('lh_user');
+        localStorage.removeItem('lh_user_orders');
+        if (user?.id || user?.email) {
+            localStorage.removeItem(`lh_orders_${user.id || user.email}`);
+        }
         setUser(null);
-    }, []);
+        setOrders([]);
+    }, [user]);
 
     const updateProfile = useCallback(async (updates) => {
         const { data } = await api.put('/auth/profile', updates);
@@ -135,22 +152,27 @@ export function AuthProvider({ children }) {
         return await supabaseGetAddresses(user?.id);
     }, [user]);
 
-    // Immediately records and caches confirmed orders locally
-    const recordOrder = useCallback((newOrder) => {
-        if (!newOrder) return;
-        setOrders((prev) => {
-            const currentList = Array.isArray(prev) ? prev : [];
-            const key = newOrder.id || newOrder.orderNumber;
-            const exists = currentList.some((o) => (o.id || o.orderNumber) === key);
-            const updated = exists
-                ? currentList.map((o) => ((o.id || o.orderNumber) === key ? { ...o, ...newOrder } : o))
-                : [newOrder, ...currentList];
-            try {
-                localStorage.setItem('lh_user_orders', JSON.stringify(updated));
-            } catch {}
-            return updated;
-        });
-    }, []);
+    // Immediately records and caches confirmed orders locally for this specific user
+    const recordOrder = useCallback(
+        (newOrder) => {
+            if (!newOrder) return;
+            setOrders((prev) => {
+                const currentList = Array.isArray(prev) ? prev : [];
+                const key = newOrder.id || newOrder.orderNumber;
+                const exists = currentList.some((o) => (o.id || o.orderNumber) === key);
+                const updated = exists
+                    ? currentList.map((o) => ((o.id || o.orderNumber) === key ? { ...o, ...newOrder } : o))
+                    : [newOrder, ...currentList];
+                if (user?.id || user?.email) {
+                    try {
+                        localStorage.setItem(`lh_orders_${user.id || user.email}`, JSON.stringify(updated));
+                    } catch {}
+                }
+                return updated;
+            });
+        },
+        [user]
+    );
 
     const addOrder = useCallback(
         async (orderData) => {
@@ -183,6 +205,7 @@ export function AuthProvider({ children }) {
                         shippingAddress: orderData.shippingAddress || {},
                         payment: orderData.payment || { method: 'card' },
                         items: orderData.items || [],
+                        userId: user?.id,
                     };
                 }
             }
@@ -194,6 +217,11 @@ export function AuthProvider({ children }) {
     );
 
     const getOrders = useCallback(async () => {
+        if (!user) {
+            setOrders([]);
+            return [];
+        }
+
         let remoteList = [];
         try {
             const { data } = await api.get('/orders');
@@ -204,11 +232,11 @@ export function AuthProvider({ children }) {
             /* ignore background error */
         }
 
-        // Fetch authoritative orders directly from Supabase
+        // Fetch authoritative orders directly from Supabase for this specific user
         try {
             const supaOrders = await supabaseGetOrders({
-                userId: user?.id,
-                email: user?.email,
+                userId: user.id,
+                email: user.email,
             });
             if (Array.isArray(supaOrders) && supaOrders.length > 0) {
                 remoteList = [...remoteList, ...supaOrders];
@@ -217,18 +245,29 @@ export function AuthProvider({ children }) {
             console.warn('Direct Supabase getOrders notice:', e.message);
         }
 
+        const userKey = `lh_orders_${user.id || user.email}`;
         let localList = [];
         try {
-            const raw = localStorage.getItem('lh_user_orders');
+            const raw = localStorage.getItem(userKey);
             localList = raw ? JSON.parse(raw) : [];
         } catch {}
 
+        // Strict verification: only include orders matching this user's ID or email
+        const belongsToUser = (o) => {
+            if (!o) return false;
+            const oUid = String(o.userId || o.user_id || '');
+            const oEmail = String(o.shippingAddress?.email || o.ship_email || '').toLowerCase().trim();
+            const uId = String(user.id || '');
+            const uEmail = String(user.email || '').toLowerCase().trim();
+            return (uId && oUid === uId) || (uEmail && oEmail === uEmail);
+        };
+
         const map = new Map();
-        remoteList.forEach((o) => {
+        remoteList.filter(belongsToUser).forEach((o) => {
             const k = o.id || o.orderNumber;
             if (k) map.set(k, o);
         });
-        localList.forEach((o) => {
+        localList.filter(belongsToUser).forEach((o) => {
             const k = o.id || o.orderNumber;
             if (k && !map.has(k)) {
                 map.set(k, o);
@@ -240,10 +279,11 @@ export function AuthProvider({ children }) {
 
         setOrders(merged);
         try {
-            localStorage.setItem('lh_user_orders', JSON.stringify(merged));
+            localStorage.setItem(userKey, JSON.stringify(merged));
+            localStorage.removeItem('lh_user_orders'); // Purge legacy global key
         } catch {}
         return merged;
-    }, []);
+    }, [user]);
 
     const loginAsAdmin = useCallback(async () => {
         return await login({ email: 'admin@lifeharmony.com', password: 'admin123' });

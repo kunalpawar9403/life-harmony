@@ -53,28 +53,26 @@ export default function Profile() {
 
     useEffect(() => {
         if (!user) return;
-        setProfileForm({ name: user.name, email: user.email });
+        setProfileForm({ name: user.name || '', email: user.email || '' });
         let cancelled = false;
 
-        if (Array.isArray(contextOrders) && contextOrders.length > 0) {
-            setOrders(contextOrders);
-            setLoadingData(false);
-        }
+        // Immediately reset orders so a new user or different account never sees stale data
+        setOrders([]);
+        setLoadingData(true);
 
         Promise.all([getOrders(), getAddresses()])
             .then(([o, a]) => {
                 if (cancelled) return;
-                if (Array.isArray(o) && o.length > 0) {
+                if (Array.isArray(o)) {
                     setOrders(o);
-                } else if (Array.isArray(contextOrders) && contextOrders.length > 0) {
-                    setOrders(contextOrders);
                 }
-                if (Array.isArray(a)) setAddresses(a);
+                if (Array.isArray(a)) {
+                    setAddresses(a);
+                }
             })
-            .catch(() => {
-                if (Array.isArray(contextOrders) && contextOrders.length > 0) {
-                    setOrders(contextOrders);
-                }
+            .catch((err) => {
+                console.warn('Profile data load notice:', err.message);
+                if (!cancelled) setOrders([]);
             })
             .finally(() => {
                 if (!cancelled) setLoadingData(false);
@@ -82,7 +80,7 @@ export default function Profile() {
         return () => {
             cancelled = true;
         };
-    }, [user, getOrders, getAddresses, contextOrders]);
+    }, [user?.id, user?.email, getOrders, getAddresses]);
 
     if (!user) {
         return null;

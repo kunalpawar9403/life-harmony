@@ -132,12 +132,19 @@ export async function supabaseCreateOrder(orderData) {
  */
 export async function supabaseGetOrders(filter = {}) {
     try {
+        // Enforce user isolation: non-admin queries without userId or email must return empty list
+        if (!filter.allowAll && !filter.userId && !filter.email) {
+            return [];
+        }
+
         let q = supabase
             .from('orders')
             .select('*, order_items(*)')
             .order('created_at', { ascending: false });
 
-        if (filter.userId) {
+        if (filter.userId && filter.email) {
+            q = q.or(`user_id.eq.${filter.userId},ship_email.ilike.${filter.email}`);
+        } else if (filter.userId) {
             q = q.eq('user_id', filter.userId);
         } else if (filter.email) {
             q = q.ilike('ship_email', filter.email);

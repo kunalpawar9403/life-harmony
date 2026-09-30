@@ -9,7 +9,7 @@ const defaultDemoOrders = [];
 
 export function saveOrder(order, userId) {
     if (!order) return null;
-    const uid = Number(userId) || 1;
+    const uid = userId ? Number(userId) : null;
     const normalized = {
         ...order,
         id: order.id || order.orderNumber || `LH-${Date.now().toString().slice(-8)}`,
@@ -18,12 +18,14 @@ export function saveOrder(order, userId) {
         userId: uid,
     };
 
-    // Save to user's orders
-    const current = ordersByUserId.get(uid) || [];
-    const filtered = current.filter(o => (o.id || o.orderNumber) !== (normalized.id || normalized.orderNumber));
-    ordersByUserId.set(uid, [normalized, ...filtered]);
+    // Save to user's orders if authenticated
+    if (uid) {
+        const current = ordersByUserId.get(uid) || [];
+        const filtered = current.filter(o => (o.id || o.orderNumber) !== (normalized.id || normalized.orderNumber));
+        ordersByUserId.set(uid, [normalized, ...filtered]);
+    }
 
-    // Save to global recent orders
+    // Save to global recent orders (admin only)
     const globalFiltered = allRecentOrders.filter(o => (o.id || o.orderNumber) !== (normalized.id || normalized.orderNumber));
     allRecentOrders.unshift(normalized);
     if (allRecentOrders.length > 100) allRecentOrders.pop();
@@ -32,12 +34,14 @@ export function saveOrder(order, userId) {
 }
 
 export function getUserOrders(userId) {
-    const uid = Number(userId) || 1;
+    if (!userId) return [];
+    const uid = Number(userId);
     const userList = ordersByUserId.get(uid) || [];
     return [...userList].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
 
 export function getOrderById(orderNumber, userId) {
+    if (!userId) return null;
     const orders = getUserOrders(userId);
     return orders.find(o => (o.id || o.orderNumber) === orderNumber) || null;
 }
