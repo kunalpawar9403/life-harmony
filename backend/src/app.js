@@ -15,6 +15,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import { query } from './config/database.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -43,6 +44,23 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { name, email, subject, message } = req.body;
+        if (!name || !email || !message) {
+            return res.status(400).json({ success: false, message: 'Name, email, and message are required' });
+        }
+        await query(
+            'INSERT INTO contact_messages (name, email, subject, message, status) VALUES (?, ?, ?, ?, ?)',
+            [name, email, subject || 'General Inquiry', message, 'new']
+        );
+        res.json({ success: true, message: 'Contact message recorded' });
+    } catch (err) {
+        console.error('Contact endpoint error:', err);
+        res.status(500).json({ success: false, message: 'Could not record message' });
+    }
+});
 
 app.use(notFound);
 app.use(errorHandler);

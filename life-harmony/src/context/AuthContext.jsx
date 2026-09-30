@@ -1,6 +1,13 @@
-// src/context/AuthContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../lib/api';
+import {
+    supabaseCreateOrder,
+    supabaseGetOrders,
+    supabaseRegisterUser,
+    supabaseLoginUser,
+    supabaseAddAddress,
+    supabaseGetAddresses,
+} from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -50,9 +57,18 @@ export function AuthProvider({ children }) {
     const register = useCallback(async ({ name, email, password }) => {
         setLoading(true);
         try {
-            const { data } = await api.post('/auth/register', { name, email, password });
-            persist(data.token, data.user);
-            return data.user;
+            let u = null;
+            let token = `lh_jwt_${Date.now()}`;
+            try {
+                const { data } = await api.post('/auth/register', { name, email, password });
+                u = data.user;
+                token = data.token;
+            } catch (apiErr) {
+                console.warn('API register offline; saving directly into Supabase...', apiErr.message);
+                u = await supabaseRegisterUser({ name, email, password });
+            }
+            persist(token, u);
+            return u;
         } finally {
             setLoading(false);
         }
@@ -61,9 +77,18 @@ export function AuthProvider({ children }) {
     const login = useCallback(async ({ email, password }) => {
         setLoading(true);
         try {
-            const { data } = await api.post('/auth/login', { email, password });
-            persist(data.token, data.user);
-            return data.user;
+            let u = null;
+            let token = `lh_jwt_${Date.now()}`;
+            try {
+                const { data } = await api.post('/auth/login', { email, password });
+                u = data.user;
+                token = data.token;
+            } catch (apiErr) {
+                console.warn('API login offline; checking directly in Supabase...', apiErr.message);
+                u = await supabaseLoginUser({ email, password });
+            }
+            persist(token, u);
+            return u;
         } finally {
             setLoading(false);
         }
@@ -82,10 +107,17 @@ export function AuthProvider({ children }) {
         return data.user;
     }, []);
 
-    const addAddress = useCallback(async (address) => {
-        const { data } = await api.post('/addresses', address);
-        return data.address;
-    }, []);
+    const addAddress = useCallback(
+        async (address) => {
+            try {
+                const { data } = await api.post('/addresses', address);
+                return data.address;
+            } catch {
+                return await supabaseAddAddress(user?.id, address);
+            }
+        },
+        [user]
+    );
 
     const removeAddress = useCallback(async (id) => {
         await api.delete(`/addresses/${id}`);
@@ -94,11 +126,14 @@ export function AuthProvider({ children }) {
     const getAddresses = useCallback(async () => {
         try {
             const { data } = await api.get('/addresses');
-            return data.addresses || [];
+            if (Array.isArray(data?.addresses) && data.addresses.length > 0) {
+                return data.addresses;
+            }
         } catch {
-            return [];
+            /* ignore */
         }
-    }, []);
+        return await supabaseGetAddresses(user?.id);
+    }, [user]);
 
     // Immediately records and caches confirmed orders locally
     const recordOrder = useCallback((newOrder) => {
@@ -120,32 +155,42 @@ export function AuthProvider({ children }) {
     const addOrder = useCallback(
         async (orderData) => {
             let created = null;
+
+            // Direct insertion into Supabase tables `orders` and `order_items`
             try {
-                const { data } = await api.post('/orders', orderData);
-                created = data.order;
-            } catch (err) {
-                console.warn('Backend order call fallback:', err.message);
-                created = {
-                    id: `LH-${Date.now().toString().slice(-8)}`,
-                    date: new Date().toISOString(),
-                    status: 'Processing',
-                    trackingNumber: `TRK${Math.floor(100000000 + Math.random() * 900000000)}`,
-                    estimatedDelivery: new Date(Date.now() + 4 * 86400000).toISOString().slice(0, 10),
-                    subtotal: Number(orderData.subtotal || orderData.total || 1499),
-                    shippingCost: Number(orderData.shippingCost || 0),
-                    tax: Number(orderData.tax || 0),
-                    discount: 0,
-                    total: Number(orderData.total || 1499),
-                    shippingMethod: orderData.shippingMethod || 'Standard',
-                    shippingAddress: orderData.shippingAddress || {},
-                    payment: orderData.payment || { method: 'card' },
-                    items: orderData.items || [],
-                };
+                created = await supabaseCreateOrder({
+                    ...orderData,
+                    user_id: user?.id,
+                });
+            } catch (supaErr) {
+                console.warn('Supabase direct order creation error; falling back to API:', supaErr.message);
+                try {
+                    const { data } = await api.post('/orders', orderData);
+                    created = data.order;
+                } catch (err) {
+                    created = {
+                        id: `LH-${Date.now().toString().slice(-8)}`,
+                        date: new Date().toISOString(),
+                        status: 'Processing',
+                        trackingNumber: `TRK${Math.floor(100000000 + Math.random() * 900000000)}`,
+                        estimatedDelivery: new Date(Date.now() + 4 * 86400000).toISOString().slice(0, 10),
+                        subtotal: Number(orderData.subtotal || orderData.total || 1499),
+                        shippingCost: Number(orderData.shippingCost || 0),
+                        tax: Number(orderData.tax || 0),
+                        discount: 0,
+                        total: Number(orderData.total || 1499),
+                        shippingMethod: orderData.shippingMethod || 'Standard',
+                        shippingAddress: orderData.shippingAddress || {},
+                        payment: orderData.payment || { method: 'card' },
+                        items: orderData.items || [],
+                    };
+                }
             }
+
             recordOrder(created);
             return created;
         },
-        [recordOrder]
+        [user, recordOrder]
     );
 
     const getOrders = useCallback(async () => {
@@ -155,8 +200,21 @@ export function AuthProvider({ children }) {
             if (Array.isArray(data?.orders)) {
                 remoteList = data.orders;
             }
-        } catch (err) {
-            console.warn('API getOrders notice:', err.message);
+        } catch {
+            /* ignore background error */
+        }
+
+        // Fetch authoritative orders directly from Supabase
+        try {
+            const supaOrders = await supabaseGetOrders({
+                userId: user?.id,
+                email: user?.email,
+            });
+            if (Array.isArray(supaOrders) && supaOrders.length > 0) {
+                remoteList = [...remoteList, ...supaOrders];
+            }
+        } catch (e) {
+            console.warn('Direct Supabase getOrders notice:', e.message);
         }
 
         let localList = [];

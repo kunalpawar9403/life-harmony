@@ -141,9 +141,58 @@ export default function Admin() {
                     search: orderSearch || undefined,
                 },
             });
-            setOrders(data.orders || []);
+            if (data?.orders) {
+                setOrders(data.orders);
+                return;
+            }
         } catch (err) {
-            console.error('Failed to fetch orders:', err);
+            console.warn('API fetchOrders offline; reading directly from Supabase...', err.message);
+        }
+
+        // Direct Supabase query
+        try {
+            let q = supabase
+                .from('orders')
+                .select('*, order_items(*)')
+                .order('created_at', { ascending: false });
+
+            if (orderStatusFilter && orderStatusFilter !== 'all') {
+                q = q.eq('status', orderStatusFilter);
+            }
+            if (orderSearch) {
+                q = q.or(`order_number.ilike.%${orderSearch}%,ship_email.ilike.%${orderSearch}%,ship_name.ilike.%${orderSearch}%`);
+            }
+
+            const { data: supaOrders, error } = await q;
+            if (!error && supaOrders) {
+                setOrders(
+                    supaOrders.map((o) => ({
+                        id: o.order_number || `LH-${o.id}`,
+                        dbId: o.id,
+                        status: o.status,
+                        total: Number(o.total),
+                        subtotal: Number(o.subtotal),
+                        createdAt: o.created_at,
+                        created_at: o.created_at,
+                        shippingAddress: {
+                            name: o.ship_name,
+                            email: o.ship_email,
+                            phone: o.ship_phone,
+                            city: o.ship_city,
+                            country: o.ship_country,
+                        },
+                        items: (o.order_items || []).map((i) => ({
+                            id: i.id,
+                            name: i.name,
+                            price: Number(i.price),
+                            qty: i.qty,
+                            image: i.image,
+                        })),
+                    }))
+                );
+            }
+        } catch (supaErr) {
+            console.error('Supabase admin orders fallback failed:', supaErr.message);
         }
     }, [orderStatusFilter, orderSearch]);
 
@@ -153,9 +202,25 @@ export default function Admin() {
             const { data } = await api.get('/admin/users', {
                 params: { search: userSearch || undefined },
             });
-            setUsersList(data.users || []);
+            if (data?.users) {
+                setUsersList(data.users);
+                return;
+            }
         } catch (err) {
-            console.error('Failed to fetch users:', err);
+            console.warn('API fetchUsers offline; reading directly from Supabase...', err.message);
+        }
+
+        try {
+            let q = supabase.from('users').select('*').order('created_at', { ascending: false });
+            if (userSearch) {
+                q = q.or(`name.ilike.%${userSearch}%,email.ilike.%${userSearch}%`);
+            }
+            const { data, error } = await q;
+            if (!error && data) {
+                setUsersList(data);
+            }
+        } catch (supaErr) {
+            console.error('Supabase admin users fallback failed:', supaErr.message);
         }
     }, [userSearch]);
 
