@@ -7,15 +7,34 @@ export async function requireAuth(req, res, next) {
         const token = header.startsWith('Bearer ') ? header.slice(7) : null;
         if (!token) return res.status(401).json({ message: 'Authentication required' });
 
-        const payload = jwt.verify(token, process.env.JWT_SECRET || 'life_harmony_secret_fallback');
+        let userId = null;
+        let userRole = 'customer';
+
+        try {
+            const payload = jwt.verify(token, process.env.JWT_SECRET || 'life_harmony_secret_fallback');
+            userId = payload.sub;
+            userRole = payload.role || 'customer';
+        } catch (jwtErr) {
+            // Check for direct Supabase fallback session token: lh_session_<userId>_<timestamp>
+            if (typeof token === 'string' && (token.startsWith('lh_session_') || token.startsWith('lh_jwt_'))) {
+                const parts = token.split('_');
+                if (parts.length >= 3 && !isNaN(Number(parts[2]))) {
+                    userId = Number(parts[2]);
+                }
+            }
+            if (!userId) {
+                return res.status(401).json({ message: 'Invalid or expired token' });
+            }
+        }
+
         let rows = [];
         try {
-            rows = await query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [payload.sub]);
+            rows = await query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [userId]);
         } catch (dbErr) {
             console.warn('DB error in requireAuth, using token payload fallback:', dbErr.message);
-            const role = payload.role || (payload.sub === 3 || payload.sub === 1 ? 'admin' : 'customer');
+            const role = userRole || (userId === 3 || userId === 1 ? 'admin' : 'customer');
             rows = [{
-                id: payload.sub,
+                id: userId,
                 name: role === 'admin' ? 'Admin Life Harmony' : 'Member',
                 email: role === 'admin' ? 'admin@lifeharmony.com' : 'customer@lifeharmony.com',
                 role,

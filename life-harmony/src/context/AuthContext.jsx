@@ -40,19 +40,24 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         const token = localStorage.getItem('lh_token');
-        if (token && !user) {
+        if (token) {
             api.get('/auth/me')
                 .then(({ data }) => {
                     const u = data.user || data;
-                    setUser(u);
-                    localStorage.setItem('lh_user', JSON.stringify(u));
+                    if (u && (u.id || u.email)) {
+                        setUser(u);
+                        localStorage.setItem('lh_user', JSON.stringify(u));
+                    }
                 })
-                .catch(() => {
-                    localStorage.removeItem('lh_token');
-                    localStorage.removeItem('lh_user');
-                    localStorage.removeItem('lh_user_orders');
-                    setUser(null);
-                    setOrders([]);
+                .catch((err) => {
+                    // Only purge session if backend explicitly rejected credentials with 401
+                    if (err.response?.status === 401) {
+                        localStorage.removeItem('lh_token');
+                        localStorage.removeItem('lh_user');
+                        localStorage.removeItem('lh_user_orders');
+                        setUser(null);
+                        setOrders([]);
+                    }
                 });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,7 +75,7 @@ export function AuthProvider({ children }) {
         setLoading(true);
         try {
             let u = null;
-            let token = `lh_jwt_${Date.now()}`;
+            let token = null;
             try {
                 const { data } = await api.post('/auth/register', { name, email, password });
                 u = data.user;
@@ -78,6 +83,7 @@ export function AuthProvider({ children }) {
             } catch (apiErr) {
                 console.warn('API register offline; saving directly into Supabase...', apiErr.message);
                 u = await supabaseRegisterUser({ name, email, password });
+                token = `lh_session_${u?.id || Date.now()}_${Date.now()}`;
             }
             persist(token, u);
             return u;
@@ -90,7 +96,7 @@ export function AuthProvider({ children }) {
         setLoading(true);
         try {
             let u = null;
-            let token = `lh_jwt_${Date.now()}`;
+            let token = null;
             try {
                 const { data } = await api.post('/auth/login', { email, password });
                 u = data.user;
@@ -98,6 +104,7 @@ export function AuthProvider({ children }) {
             } catch (apiErr) {
                 console.warn('API login offline; checking directly in Supabase...', apiErr.message);
                 u = await supabaseLoginUser({ email, password });
+                token = `lh_session_${u?.id || Date.now()}_${Date.now()}`;
             }
             persist(token, u);
             return u;

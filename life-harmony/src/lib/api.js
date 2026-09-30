@@ -15,9 +15,13 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (res) => res,
     (err) => {
-        if (err.response?.status === 401) {
-            localStorage.removeItem('lh_token');
-            localStorage.removeItem('lh_user');
+        // Only clear session if the token validation endpoint (/auth/me) explicitly rejects the token
+        const isAuthValidation = err.config?.url && (err.config.url.endsWith('/auth/me') || err.config.url.endsWith('/auth/profile'));
+        if (err.response?.status === 401 && isAuthValidation) {
+            try {
+                localStorage.removeItem('lh_token');
+                localStorage.removeItem('lh_user');
+            } catch {}
         }
         return Promise.reject(err);
     }
