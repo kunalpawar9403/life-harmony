@@ -9,9 +9,10 @@ export async function requireAuth(req, res, next) {
 
         let userId = null;
         let userRole = 'customer';
+        let payload = null;
 
         try {
-            const payload = jwt.verify(token, process.env.JWT_SECRET || 'life_harmony_secret_fallback');
+            payload = jwt.verify(token, process.env.JWT_SECRET || 'life_harmony_secret_fallback');
             userId = payload.sub;
             userRole = payload.role || 'customer';
         } catch (jwtErr) {
@@ -32,14 +33,15 @@ export async function requireAuth(req, res, next) {
             rows = await query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [userId]);
         } catch (dbErr) {
             console.warn('DB error in requireAuth, using token payload fallback:', dbErr.message);
-            const role = userRole || (userId === 3 || userId === 1 ? 'admin' : 'customer');
-            rows = [{
-                id: userId,
-                name: role === 'admin' ? 'Admin Life Harmony' : 'Member',
-                email: role === 'admin' ? 'admin@lifeharmony.com' : 'customer@lifeharmony.com',
-                role,
-                created_at: new Date()
-            }];
+            if (payload && (payload.email || payload.name)) {
+                rows = [{
+                    id: userId,
+                    name: payload.name || 'Member',
+                    email: payload.email,
+                    role: userRole,
+                    created_at: new Date()
+                }];
+            }
         }
         if (!rows.length) return res.status(401).json({ message: 'User not found' });
 
@@ -62,8 +64,13 @@ export async function requireAdmin(req, res, next) {
             rows = await query('SELECT id, name, email, role, created_at FROM users WHERE id = ?', [payload.sub]);
         } catch (dbErr) {
             console.warn('DB error in requireAdmin, using token payload fallback:', dbErr.message);
-            if (payload.role === 'admin' || payload.sub === 999 || payload.sub === 3 || payload.sub === 1) {
-                rows = [{ id: payload.sub, name: 'Admin Master', email: 'admin@lifeharmony.com', role: 'admin' }];
+            if (payload.role === 'admin') {
+                rows = [{
+                    id: payload.sub,
+                    name: payload.name || 'Admin Master',
+                    email: payload.email || 'admin@lifeharmony.com',
+                    role: 'admin'
+                }];
             }
         }
         if (!rows.length) return res.status(401).json({ message: 'User not found' });

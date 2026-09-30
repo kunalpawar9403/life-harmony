@@ -42,7 +42,7 @@ export async function register(req, res, next) {
             throw new Error('User could not be saved to Supabase database.');
         }
 
-        const token = signToken(user.id, user.role);
+        const token = signToken(user.id, user.role, { email: user.email, name: user.name });
         return res.status(201).json({ token, user: publicUser(user) });
     } catch (err) {
         console.error('Registration error in Supabase:', err);
@@ -70,7 +70,7 @@ export async function login(req, res, next) {
             return res.status(401).json({ message: 'Invalid email or password.' });
         }
 
-        const token = signToken(rows[0].id, rows[0].role);
+        const token = signToken(rows[0].id, rows[0].role, { email: rows[0].email, name: rows[0].name });
         return res.json({ token, user: publicUser(rows[0]) });
     } catch (err) {
         console.error('Login error in Supabase:', err);
