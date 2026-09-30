@@ -1,3 +1,7 @@
+import dns from 'dns';
+if (dns && typeof dns.setDefaultResultOrder === 'function') {
+    dns.setDefaultResultOrder('ipv4first');
+}
 import app from '../backend/src/app.js';
 
 export default function handler(req, res) {

@@ -1,7 +1,13 @@
 import pg from 'pg';
+import dns from 'dns';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// Prioritize IPv4 to avoid 30s IPv6 connection timeouts to db.<project>.supabase.co
+if (dns && typeof dns.setDefaultResultOrder === 'function') {
+    dns.setDefaultResultOrder('ipv4first');
+}
 
 const { Pool } = pg;
 

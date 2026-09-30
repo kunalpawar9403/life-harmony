@@ -22,6 +22,7 @@ router.post('/login',
 );
 
 router.get('/me', requireAuth, c.me);
+router.get('/profile', requireAuth, c.me);
 router.put('/profile', requireAuth, c.updateProfile);
 
 export default router;
