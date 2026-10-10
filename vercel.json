@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "services": {
+    "backend": {
+      "root": "backend",
+      "framework": "express"
+    },
+    "life-harmony": {
+      "root": "life-harmony",
+      "framework": "vite"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "life-harmony"
+      }
+    }
+  ]
+}
