@@ -1,0 +1,143 @@
+name: Playwright QA Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git branch or commit SHA to checkout and test'
+        required: false
+        default: 'main'
+      correlation_id:
+        description: 'n8n workflow correlation ID for audit and tracing'
+        required: false
+        default: 'manual-dispatch'
+      environment:
+        description: 'Target test environment (e.g. staging, production, pr)'
+        required: false
+        default: 'staging'
+      callback_url:
+        description: 'n8n webhook callback URL to notify when test completes (optional)'
+        required: false
+        default: ''
+  repository_dispatch:
+    types: [run-playwright-qa]
+
+# Prevent race conditions while allowing distinct runs
+concurrency:
+  group: qa-${{ github.event.inputs.ref || github.event.client_payload.ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  playwright-qa:
+    name: Execute Playwright Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+
+    steps:
+      - name: Resolve Target Ref & Metadata
+        id: meta
+        run: |
+          TARGET_REF="${{ github.event.inputs.ref || github.event.client_payload.ref || github.ref }}"
+          CORRELATION_ID="${{ github.event.inputs.correlation_id || github.event.client_payload.correlation_id || 'manual' }}"
+          CALLBACK_URL="${{ github.event.inputs.callback_url || github.event.client_payload.callback_url || '' }}"
+          ENV_NAME="${{ github.event.inputs.environment || github.event.client_payload.environment || 'staging' }}"
+          
+          echo "target_ref=$TARGET_REF" >> "$GITHUB_OUTPUT"
+          echo "correlation_id=$CORRELATION_ID" >> "$GITHUB_OUTPUT"
+          echo "callback_url=$CALLBACK_URL" >> "$GITHUB_OUTPUT"
+          echo "environment=$ENV_NAME" >> "$GITHUB_OUTPUT"
+          echo "Dispatched for ref: $TARGET_REF with correlation ID: $CORRELATION_ID"
+
+      - name: Checkout Code at Specific Ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.target_ref }}
+          fetch-depth: 1
+
+      - name: Capture Exact Commit SHA
+        id: commit_info
+        run: |
+          EXACT_SHA=$(git rev-parse HEAD)
+          echo "sha=$EXACT_SHA" >> "$GITHUB_OUTPUT"
+          echo "Target commit SHA: $EXACT_SHA"
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci || npm install
+
+      - name: Install Playwright Browsers (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright Tests
+        id: test_runner
+        continue-on-error: true
+        env:
+          CI: 'true'
+          BASE_URL: ${{ steps.meta.outputs.environment == 'production' && 'https://demo.playwright.dev' || 'https://demo.playwright.dev' }}
+          CORRELATION_ID: ${{ steps.meta.outputs.correlation_id }}
+        run: |
+          npx playwright test --project=chromium
+
+      - name: Determine Test Outcome
+        id: test_status
+        run: |
+          TEST_OUTCOME="${{ steps.test_runner.outcome }}"
+          echo "conclusion=$TEST_OUTCOME" >> "$GITHUB_OUTPUT"
+          echo "Playwright test runner finished with outcome: $TEST_OUTCOME"
+
+      - name: Upload Playwright HTML Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-html-report-run-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload Test Results & Traces
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-run-${{ github.run_id }}
+          path: test-results/
+          retention-days: 7
+
+      - name: Optional Callback to n8n Cloud
+        if: always() && steps.meta.outputs.callback_url != ''
+        run: |
+          CALLBACK_URL="${{ steps.meta.outputs.callback_url }}"
+          PAYLOAD=$(cat <<EOF
+          {
+            "event": "qa_run_completed",
+            "correlation_id": "${{ steps.meta.outputs.correlation_id }}",
+            "repository": "${{ github.repository }}",
+            "run_id": "${{ github.run_id }}",
+            "run_number": "${{ github.run_number }}",
+            "run_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "commit_sha": "${{ steps.commit_info.outputs.sha }}",
+            "conclusion": "${{ steps.test_status.outputs.conclusion }}",
+            "environment": "${{ steps.meta.outputs.environment }}"
+          }
+          EOF
+          )
+          
+          echo "Sending completion callback to n8n..."
+          curl -s -X POST "$CALLBACK_URL" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: GitHub-Actions-Playwright-QA" \
+            -d "$PAYLOAD" || echo "Callback delivery attempt completed."
+
+      - name: Enforce Strict Pipeline Conclusion
+        if: steps.test_status.outputs.conclusion != 'success'
+        run: |
+          echo "::error::Playwright tests failed. Failing job to prevent false success reporting."
+          exit 1

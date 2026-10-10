@@ -1,0 +1,27 @@
+{
+  "name": "playwright-n8n-qa-automation",
+  "version": "1.0.0",
+  "description": "Production Playwright automated QA workflow orchestrated by n8n Cloud and GitHub Actions",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report"
+  },
+  "keywords": [
+    "playwright",
+    "n8n",
+    "github-actions",
+    "qa-automation",
+    "ci-cd"
+  ],
+  "author": "Kunal Pawar",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.1",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.7.2"
+  }
+}

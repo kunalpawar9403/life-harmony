@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Playwright Test Outputs (Local execution ignore - Antigravity will not generate these)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

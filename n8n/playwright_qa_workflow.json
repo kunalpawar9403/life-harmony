@@ -1,0 +1,753 @@
+{
+  "name": "Playwright QA Orchestrator - Production",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "playwright-qa-dispatch",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-700, 200],
+      "id": "webhook-trigger-node",
+      "name": "Webhook Trigger (QA Dispatch)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-700, 380],
+      "id": "manual-trigger-node",
+      "name": "Manual Execution Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Production Context Initialization & Input Normalization\nconst inputData = $input.first().json || {};\nconst body = inputData.body || inputData;\n\n// Generate standard correlation ID with timestamp and randomness\nconst timestamp = Date.now();\nconst randomPart = Math.random().toString(36).substring(2, 9);\nconst correlationId = body.correlation_id || `qa_corr_${timestamp}_${randomPart}`;\n\n// Target repository defaults (configurable per team/repo)\nconst repoOwner = (body.repo_owner || 'kunal').trim();\nconst repoName = (body.repo_name || 'n8n').trim();\nconst ref = (body.ref || 'main').trim();\nconst commitSha = (body.commit_sha || '').trim();\nconst environment = (body.environment || 'staging').trim();\nconst notificationWebhook = (body.notification_webhook || '').trim();\n\n// Input sanity checks\nif (!repoOwner || !repoName) {\n  throw new Error('Validation failed: repo_owner and repo_name are required.');\n}\n\nreturn [{\n  json: {\n    correlation_id: correlationId,\n    repo_owner: repoOwner,\n    repo_name: repoName,\n    ref: ref,\n    commit_sha: commitSha,\n    environment: environment,\n    notification_webhook: notificationWebhook,\n    triggered_at: new Date().toISOString(),\n    poll_count: 0,\n    max_polls: 30,\n    poll_interval_seconds: 15,\n    is_completed: false,\n    is_timed_out: false\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-460, 280],
+      "id": "init-context-node",
+      "name": "Normalize & Validate Input"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"accepted\",\n  \"message\": \"Playwright QA execution accepted and queued\",\n  \"correlation_id\": \"{{ $json.correlation_id }}\",\n  \"repository\": \"{{ $json.repo_owner }}/{{ $json.repo_name }}\",\n  \"ref\": \"{{ $json.ref }}\",\n  \"environment\": \"{{ $json.environment }}\",\n  \"triggered_at\": \"{{ $json.triggered_at }}\"\n}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-240, 140],
+      "id": "ack-webhook-node",
+      "name": "Immediate Webhook ACK (202)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $json.repo_owner }}/{{ $json.repo_name }}/statuses/{{ $json.commit_sha || $json.ref }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"state\": \"pending\",\n  \"description\": \"Playwright QA execution initialized (Corr: {{ $json.correlation_id }})\",\n  \"context\": \"n8n/playwright-qa\"\n}",
+        "options": {
+          "allowUnauthorizedCerts": false,
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-240, 380],
+      "id": "set-status-pending-node",
+      "name": "Set GitHub Status (Pending)",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Normalize & Validate Input').item.json.repo_owner }}/{{ $('Normalize & Validate Input').item.json.repo_name }}/actions/workflows/qa-execute.yml/dispatches",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"ref\": \"{{ $('Normalize & Validate Input').item.json.ref }}\",\n  \"inputs\": {\n    \"ref\": \"{{ $('Normalize & Validate Input').item.json.ref }}\",\n    \"correlation_id\": \"{{ $('Normalize & Validate Input').item.json.correlation_id }}\",\n    \"environment\": \"{{ $('Normalize & Validate Input').item.json.environment }}\"\n  }\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-20, 380],
+      "id": "dispatch-workflow-node",
+      "name": "Dispatch GitHub Action"
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [200, 380],
+      "id": "initial-wait-node",
+      "name": "Initial Wait for GitHub Registration"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $('Normalize & Validate Input').first().json.repo_owner }}/{{ $('Normalize & Validate Input').first().json.repo_name }}/actions/workflows/qa-execute.yml/runs?event=workflow_dispatch&per_page=10",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [420, 380],
+      "id": "get-runs-node",
+      "name": "Fetch Workflow Runs"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Inspect recent runs to find the exact match and increment bounded loop\nconst ctx = $('Normalize & Validate Input').first().json;\nconst prevPollCount = ctx.poll_count || 0;\nconst newPollCount = prevPollCount + 1;\nctx.poll_count = newPollCount;\n\nconst runsData = $input.first().json || {};\nconst runs = runsData.workflow_runs || [];\n\n// Match by trigger time or head_branch/head_sha\nconst triggerTime = new Date(ctx.triggered_at).getTime() - 60000; // 1 min margin\nlet matchedRun = null;\n\nfor (const r of runs) {\n  const runCreatedAt = new Date(r.created_at).getTime();\n  const branchMatch = r.head_branch === ctx.ref;\n  const shaMatch = ctx.commit_sha ? r.head_sha.startsWith(ctx.commit_sha) : true;\n  \n  if (runCreatedAt >= triggerTime && (branchMatch || shaMatch)) {\n    matchedRun = r;\n    break;\n  }\n}\n\nif (!matchedRun && runs.length > 0) {\n  matchedRun = runs[0]; // Fallback to newest run in workflow if strict filter didn't match\n}\n\nconst isCompleted = matchedRun ? matchedRun.status === 'completed' : false;\nconst isTimedOut = newPollCount >= ctx.max_polls;\n\nreturn [{\n  json: {\n    ...ctx,\n    poll_count: newPollCount,\n    is_completed: isCompleted,\n    is_timed_out: isTimedOut,\n    run_id: matchedRun ? matchedRun.id : null,\n    run_number: matchedRun ? matchedRun.run_number : null,\n    head_sha: matchedRun ? matchedRun.head_sha : ctx.commit_sha,\n    status: matchedRun ? matchedRun.status : 'not_found',\n    conclusion: matchedRun ? matchedRun.conclusion : null,\n    html_url: matchedRun ? matchedRun.html_url : null,\n    run_started_at: matchedRun ? matchedRun.run_started_at : null,\n    updated_at: matchedRun ? matchedRun.updated_at : null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 380],
+      "id": "evaluate-run-node",
+      "name": "Evaluate Run & Bounded Counter"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_completed }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [860, 380],
+      "id": "check-completed-if",
+      "name": "Is Run Completed?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_timed_out }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [860, 580],
+      "id": "check-timeout-if",
+      "name": "Is Polling Timed Out?"
+    },
+    {
+      "parameters": {
+        "amount": 15,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [640, 580],
+      "id": "retry-interval-wait",
+      "name": "Wait Before Next Poll"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $json.repo_owner }}/{{ $json.repo_name }}/statuses/{{ $json.head_sha || $json.ref }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"state\": \"error\",\n  \"target_url\": \"{{ $json.html_url || '' }}\",\n  \"description\": \"Playwright QA timed out waiting for GitHub Actions completion after {{ $json.poll_count }} polls.\",\n  \"context\": \"n8n/playwright-qa\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 680],
+      "id": "set-status-timeout-node",
+      "name": "Set GitHub Status (Timeout)",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Strict Conclusion & SHA Verification Guard\nconst data = $input.first().json;\n\n// Validation checks\nconst hasRunId = Boolean(data.run_id);\nconst isSuccessConclusion = data.conclusion === 'success';\nconst isFailedConclusion = ['failure', 'timed_out', 'cancelled'].includes(data.conclusion);\n\n// Verify commit SHA integrity if SHA was expected\nconst shaMatches = data.commit_sha ? data.head_sha.startsWith(data.commit_sha) : true;\n\n// Prevent false positives: conclusion must be explicitly 'success' and sha must match\nconst strictlyVerified = hasRunId && isSuccessConclusion && shaMatches;\n\nreturn [{\n  json: {\n    ...data,\n    verified_success: strictlyVerified,\n    sha_verified: shaMatches,\n    failure_reason: strictlyVerified ? null : (!shaMatches ? 'Commit SHA mismatch' : `Run concluded with: ${data.conclusion}`)\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 340],
+      "id": "verify-conclusion-node",
+      "name": "Verify Run Conclusion & SHA"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.verified_success }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1320, 340],
+      "id": "check-verified-success-if",
+      "name": "Is Verified Pass?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $json.repo_owner }}/{{ $json.repo_name }}/statuses/{{ $json.head_sha }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"state\": \"success\",\n  \"target_url\": \"{{ $json.html_url }}\",\n  \"description\": \"Playwright QA Passed (Run #{{ $json.run_number }})\",\n  \"context\": \"n8n/playwright-qa\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 240],
+      "id": "set-status-success-node",
+      "name": "Set GitHub Status (Success)",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.notification_webhook || 'https://httpbin.org/post' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"playwright_qa_passed\",\n  \"status\": \"SUCCESS\",\n  \"correlation_id\": \"{{ $json.correlation_id }}\",\n  \"repository\": \"{{ $json.repo_owner }}/{{ $json.repo_name }}\",\n  \"branch\": \"{{ $json.ref }}\",\n  \"commit_sha\": \"{{ $json.head_sha }}\",\n  \"run_id\": {{ $json.run_id }},\n  \"run_number\": {{ $json.run_number }},\n  \"github_run_url\": \"{{ $json.html_url }}\",\n  \"environment\": \"{{ $json.environment }}\",\n  \"summary\": \"All automated Playwright tests passed successfully on GitHub Actions.\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 240],
+      "id": "pass-notification-node",
+      "name": "Send Pass Notification",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $json.repo_owner }}/{{ $json.repo_name }}/statuses/{{ $json.head_sha }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"state\": \"failure\",\n  \"target_url\": \"{{ $json.html_url }}\",\n  \"description\": \"Playwright QA Failed (Run #{{ $json.run_number }} - {{ $json.conclusion }})\",\n  \"context\": \"n8n/playwright-qa\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 460],
+      "id": "set-status-fail-node",
+      "name": "Set GitHub Status (Failure)",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $json.repo_owner }}/{{ $json.repo_name }}/actions/runs/{{ $json.run_id }}/jobs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1780, 460],
+      "id": "fetch-failing-jobs-node",
+      "name": "Fetch Failed Jobs & Step Details",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Verify Run Conclusion & SHA').item.json.notification_webhook || 'https://httpbin.org/post' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"playwright_qa_failed\",\n  \"status\": \"FAILURE\",\n  \"correlation_id\": \"{{ $('Verify Run Conclusion & SHA').item.json.correlation_id }}\",\n  \"repository\": \"{{ $('Verify Run Conclusion & SHA').item.json.repo_owner }}/{{ $('Verify Run Conclusion & SHA').item.json.repo_name }}\",\n  \"branch\": \"{{ $('Verify Run Conclusion & SHA').item.json.ref }}\",\n  \"commit_sha\": \"{{ $('Verify Run Conclusion & SHA').item.json.head_sha }}\",\n  \"run_id\": {{ $('Verify Run Conclusion & SHA').item.json.run_id }},\n  \"run_number\": {{ $('Verify Run Conclusion & SHA').item.json.run_number }},\n  \"conclusion\": \"{{ $('Verify Run Conclusion & SHA').item.json.conclusion }}\",\n  \"github_run_url\": \"{{ $('Verify Run Conclusion & SHA').item.json.html_url }}\",\n  \"failure_reason\": \"{{ $('Verify Run Conclusion & SHA').item.json.failure_reason }}\",\n  \"alert\": \"Automated QA suite detected test failures. Check GitHub Actions artifact traces for debugging.\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 460],
+      "id": "fail-notification-node",
+      "name": "Send Fail Notification",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Verify Run Conclusion & SHA').item.json.repo_owner }}/{{ $('Verify Run Conclusion & SHA').item.json.repo_name }}/issues",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2022-11-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"[QA Failure Handoff] Playwright Test Run #{{ $('Verify Run Conclusion & SHA').item.json.run_number }} Failed (Ref: {{ $('Verify Run Conclusion & SHA').item.json.ref }})\",\n  \"body\": \"### 🚨 Automated QA Failure Report\\n\\n**Correlation ID:** `{{ $('Verify Run Conclusion & SHA').item.json.correlation_id }}`\\n**Repository:** `{{ $('Verify Run Conclusion & SHA').item.json.repo_owner }}/{{ $('Verify Run Conclusion & SHA').item.json.repo_name }}`\\n**Target Commit SHA:** `{{ $('Verify Run Conclusion & SHA').item.json.head_sha }}`\\n**Workflow Run:** [View GitHub Actions Run #{{ $('Verify Run Conclusion & SHA').item.json.run_number }}]({{ $('Verify Run Conclusion & SHA').item.json.html_url }})\\n\\n---\\n\\n### 🖥️ Secure Antigravity Desktop / Developer Handoff Instructions\\n*Note: n8n Cloud cannot connect directly to your local computer (`localhost`). Follow these steps to reproduce and triage safely in Antigravity or local terminal:*\\n\\n1. **Checkout the exact failing commit:**\\n   ```bash\\n   git fetch origin\\n   git checkout {{ $('Verify Run Conclusion & SHA').item.json.head_sha }}\\n   ```\\n2. **Download Artifacts & Traces:**\\n   Inspect the traces uploaded to the GitHub Actions artifacts for Run #{{ $('Verify Run Conclusion & SHA').item.json.run_number }}.\\n3. **Local Investigation:**\\n   Review the failing test spec and fix code before pushing an update.\\n\\n*Automated Handoff Dispatched by n8n Cloud Orchestrator.*\",\n  \"labels\": [\"qa-failure\", \"automated-triage\"]\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2220, 460],
+      "id": "agent-handoff-github-issue",
+      "name": "Secure Agent Handoff / Issue Creation",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [-700, 720],
+      "id": "error-trigger-node",
+      "name": "Global Workflow Error Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const errorData = $input.first().json || {};\nconst execution = errorData.execution || {};\n\nreturn [{\n  json: {\n    alert_type: 'WORKFLOW_EXECUTION_FAILURE',\n    workflow_name: execution.workflowName || 'Playwright QA Orchestrator',\n    execution_id: execution.id || 'unknown',\n    error_message: errorData.error?.message || 'Uncaught error in workflow',\n    error_node: errorData.error?.node?.name || 'unknown',\n    occurred_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-460, 720],
+      "id": "format-error-node",
+      "name": "Format Global Error Details"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://httpbin.org/post",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"n8n_workflow_fatal_error\",\n  \"workflow\": \"{{ $json.workflow_name }}\",\n  \"execution_id\": \"{{ $json.execution_id }}\",\n  \"failed_node\": \"{{ $json.error_node }}\",\n  \"error\": \"{{ $json.error_message }}\",\n  \"timestamp\": \"{{ $json.occurred_at }}\"\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-240, 720],
+      "id": "send-global-error-node",
+      "name": "Send Global Error Alert",
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Webhook Trigger (QA Dispatch)": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Execution Trigger": {
+      "main": [
+        [
+          {
+            "node": "Normalize & Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize & Validate Input": {
+      "main": [
+        [
+          {
+            "node": "Immediate Webhook ACK (202)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Set GitHub Status (Pending)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set GitHub Status (Pending)": {
+      "main": [
+        [
+          {
+            "node": "Dispatch GitHub Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch GitHub Action": {
+      "main": [
+        [
+          {
+            "node": "Initial Wait for GitHub Registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initial Wait for GitHub Registration": {
+      "main": [
+        [
+          {
+            "node": "Fetch Workflow Runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Workflow Runs": {
+      "main": [
+        [
+          {
+            "node": "Evaluate Run & Bounded Counter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate Run & Bounded Counter": {
+      "main": [
+        [
+          {
+            "node": "Is Run Completed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Run Completed?": {
+      "main": [
+        [
+          {
+            "node": "Verify Run Conclusion & SHA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Polling Timed Out?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Polling Timed Out?": {
+      "main": [
+        [
+          {
+            "node": "Set GitHub Status (Timeout)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait Before Next Poll",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Before Next Poll": {
+      "main": [
+        [
+          {
+            "node": "Fetch Workflow Runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify Run Conclusion & SHA": {
+      "main": [
+        [
+          {
+            "node": "Is Verified Pass?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Verified Pass?": {
+      "main": [
+        [
+          {
+            "node": "Set GitHub Status (Success)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set GitHub Status (Failure)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set GitHub Status (Success)": {
+      "main": [
+        [
+          {
+            "node": "Send Pass Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set GitHub Status (Failure)": {
+      "main": [
+        [
+          {
+            "node": "Fetch Failed Jobs & Step Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Failed Jobs & Step Details": {
+      "main": [
+        [
+          {
+            "node": "Send Fail Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Fail Notification": {
+      "main": [
+        [
+          {
+            "node": "Secure Agent Handoff / Issue Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Global Workflow Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Global Error Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Global Error Details": {
+      "main": [
+        [
+          {
+            "node": "Send Global Error Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": [
+    {
+      "name": "Playwright QA"
+    },
+    {
+      "name": "GitHub Actions"
+    },
+    {
+      "name": "Antigravity Handoff"
+    }
+  ]
+}
