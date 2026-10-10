@@ -157,7 +157,7 @@
     },
     {
       "parameters": {
-        "amount": 15,
+        "amount": 40,
         "unit": "seconds"
       },
       "type": "n8n-nodes-base.wait",
@@ -223,7 +223,7 @@
         }
       },
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "typeVersion": 1,
       "position": [840, 320],
       "id": "check-completed-if",
       "name": "Is Run Completed?"
@@ -240,7 +240,7 @@
         }
       },
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "typeVersion": 1,
       "position": [840, 520],
       "id": "check-timeout-if",
       "name": "Is Polling Timed Out?"
@@ -313,7 +313,7 @@
         }
       },
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
+      "typeVersion": 1,
       "position": [1300, 280],
       "id": "check-verified-success-if",
       "name": "Is Verified Pass?"
