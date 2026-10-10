@@ -1,5 +1,5 @@
 {
-  "name": "Playwright QA Orchestrator - Production (Ready to Run)",
+  "name": "Playwright QA Orchestrator - Production (Multi-Repo & Email Report)",
   "nodes": [
     {
       "parameters": {},
@@ -24,7 +24,7 @@
     },
     {
       "parameters": {
-        "jsCode": "/**\n * =========================================================================\n * ⚙️ STEP 1: CONFIGURE YOUR GITHUB REPO & TOKEN HERE\n * =========================================================================\n * Paste your GitHub Personal Access Token (PAT) below.\n * You only need to configure this single node to run the entire workflow!\n */\n\n// 1. Your GitHub Personal Access Token (Requires scopes: repo, actions, workflow)\nconst GITHUB_TOKEN = $env.GITHUB_TOKEN || 'REPLACE_WITH_YOUR_GITHUB_PAT';\n\n// 2. Target GitHub Repository\nconst REPO_OWNER = 'kunalpawar9403'; // Your GitHub username or organization\nconst REPO_NAME = 'life-harmony';    // Your repository name\nconst DEFAULT_REF = 'main';          // Default branch to test\nconst ENVIRONMENT = 'staging';       // Target environment name\n\n// 3. Optional Notification Webhook (Slack, Discord, Teams, etc.)\nconst NOTIFICATION_WEBHOOK = ''; // Leave empty if not using notifications\n\n// =========================================================================\n// Execution Logic & Correlation ID Generation (Do not modify below)\n// =========================================================================\nconst incoming = $input.first()?.json || {};\nconst body = incoming.body || incoming;\n\nconst timestamp = Date.now();\nconst randomStr = Math.random().toString(36).substring(2, 9);\nconst correlationId = body.correlation_id || `qa_corr_${timestamp}_${randomStr}`;\n\nconst finalOwner = (body.repo_owner || REPO_OWNER).trim();\nconst finalRepo = (body.repo_name || REPO_NAME).trim();\nconst finalRef = (body.ref || DEFAULT_REF).trim();\nconst finalCommitSha = (body.commit_sha || '').trim();\nconst finalToken = (body.github_token || GITHUB_TOKEN).trim();\nconst finalWebhook = (body.notification_webhook || NOTIFICATION_WEBHOOK).trim();\n\nreturn [{\n  json: {\n    github_token: finalToken,\n    repo_owner: finalOwner,\n    repo_name: finalRepo,\n    ref: finalRef,\n    commit_sha: finalCommitSha,\n    environment: ENVIRONMENT,\n    notification_webhook: finalWebhook,\n    correlation_id: correlationId,\n    triggered_at: new Date().toISOString(),\n    poll_count: 0,\n    max_polls: 30,\n    poll_interval_seconds: 15,\n    is_completed: false,\n    is_timed_out: false\n  }\n}];"
+        "jsCode": "/**\n * =========================================================================\n * ⚙️ STEP 1: CONFIGURE REPO, TOKEN & EMAIL HERE\n * =========================================================================\n * When testing another repository, ONLY CHANGE REPO_OWNER / REPO_NAME below!\n * The entire pipeline will automatically execute against that repo.\n */\n\n// 1. Target GitHub Repository (Change this when testing another repo!)\nconst REPO_OWNER = 'kunalpawar9403'; // GitHub user or organization\nconst REPO_NAME = 'life-harmony';    // Repository name to test\nconst DEFAULT_REF = 'main';          // Branch to checkout and test\nconst ENVIRONMENT = 'staging';       // Target environment tag\n\n// 2. Your GitHub Personal Access Token (Paste in n8n Cloud directly)\nconst GITHUB_TOKEN = $env.GITHUB_TOKEN || 'REPLACE_WITH_YOUR_GITHUB_PAT';\n\n// 3. Final Report Notification Email\nconst RECIPIENT_EMAIL = 'kunalpawar0309@gmail.com';\n\n// 4. Optional Webhook (Slack, Discord, Teams)\nconst NOTIFICATION_WEBHOOK = '';\n\n// =========================================================================\n// Dynamic Context Normalization & Correlation ID Generation\n// =========================================================================\nconst incoming = $input.first()?.json || {};\nconst body = incoming.body || incoming;\n\nconst timestamp = Date.now();\nconst randomStr = Math.random().toString(36).substring(2, 9);\nconst correlationId = body.correlation_id || `qa_corr_${timestamp}_${randomStr}`;\n\nconst finalOwner = (body.repo_owner || REPO_OWNER).trim();\nconst finalRepo = (body.repo_name || REPO_NAME).trim();\nconst finalRef = (body.ref || DEFAULT_REF).trim();\nconst finalCommitSha = (body.commit_sha || '').trim();\nconst finalToken = (body.github_token || GITHUB_TOKEN).trim();\nconst finalEmail = (body.recipient_email || RECIPIENT_EMAIL).trim();\nconst finalWebhook = (body.notification_webhook || NOTIFICATION_WEBHOOK).trim();\n\nreturn [{\n  json: {\n    github_token: finalToken,\n    repo_owner: finalOwner,\n    repo_name: finalRepo,\n    ref: finalRef,\n    commit_sha: finalCommitSha,\n    environment: ENVIRONMENT,\n    recipient_email: finalEmail,\n    notification_webhook: finalWebhook,\n    correlation_id: correlationId,\n    triggered_at: new Date().toISOString(),\n    poll_count: 0,\n    max_polls: 30,\n    poll_interval_seconds: 15,\n    is_completed: false,\n    is_timed_out: false\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -56,7 +56,7 @@
     },
     {
       "parameters": {
-        "jsCode": "throw new Error(`\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n❌ CONFIGURATION REQUIRED:\\nGitHub Personal Access Token is still set to placeholder!\\n\\n👉 Double-click node '⚙️ Set Your GitHub Config & Token'\\n👉 Replace 'REPLACE_WITH_YOUR_GITHUB_PAT' with your real GitHub PAT.\\n👉 Scopes required: 'repo', 'workflow', 'actions'\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);"
+        "jsCode": "throw new Error(`\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n❌ CONFIGURATION REQUIRED:\\nGitHub Personal Access Token is missing or empty!\\n\\n👉 Double-click node '⚙️ Set Your GitHub Config & Token'\\n👉 Set GITHUB_TOKEN with your GitHub PAT.\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -67,7 +67,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"status\": \"accepted\",\n  \"message\": \"Playwright QA execution accepted and dispatched\",\n  \"correlation_id\": \"{{ $json.correlation_id }}\",\n  \"repository\": \"{{ $json.repo_owner }}/{{ $json.repo_name }}\",\n  \"ref\": \"{{ $json.ref }}\",\n  \"triggered_at\": \"{{ $json.triggered_at }}\"\n}",
+        "responseBody": "={\n  \"status\": \"accepted\",\n  \"message\": \"Playwright QA execution accepted and dispatched\",\n  \"correlation_id\": \"{{ $json.correlation_id }}\",\n  \"repository\": \"{{ $json.repo_owner }}/{{ $json.repo_name }}\",\n  \"ref\": \"{{ $json.ref }}\",\n  \"recipient_email\": \"{{ $json.recipient_email }}\",\n  \"triggered_at\": \"{{ $json.triggered_at }}\"\n}",
         "options": {
           "responseCode": 202
         }
@@ -203,7 +203,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Match active run & increment poll counter\nconst config = $('⚙️ Set Your GitHub Config & Token').first().json;\nconst currentPollCount = (config.poll_count || 0) + 1;\nconfig.poll_count = currentPollCount;\n\nconst runsPayload = $input.first().json || {};\nconst runs = runsPayload.workflow_runs || [];\n\nconst triggerTimestamp = new Date(config.triggered_at).getTime() - 60000;\nlet matchedRun = null;\n\nfor (const r of runs) {\n  const runCreatedAt = new Date(r.created_at).getTime();\n  const branchMatch = r.head_branch === config.ref;\n  const shaMatch = config.commit_sha ? r.head_sha.startsWith(config.commit_sha) : true;\n  \n  if (runCreatedAt >= triggerTimestamp && (branchMatch || shaMatch)) {\n    matchedRun = r;\n    break;\n  }\n}\n\nif (!matchedRun && runs.length > 0) {\n  matchedRun = runs[0];\n}\n\nconst isCompleted = matchedRun ? matchedRun.status === 'completed' : false;\nconst isTimedOut = currentPollCount >= config.max_polls;\n\nreturn [{\n  json: {\n    ...config,\n    poll_count: currentPollCount,\n    is_completed: isCompleted,\n    is_timed_out: isTimedOut,\n    run_id: matchedRun ? matchedRun.id : null,\n    run_number: matchedRun ? matchedRun.run_number : null,\n    head_sha: matchedRun ? matchedRun.head_sha : config.commit_sha,\n    status: matchedRun ? matchedRun.status : 'not_found',\n    conclusion: matchedRun ? matchedRun.conclusion : null,\n    html_url: matchedRun ? matchedRun.html_url : null,\n    updated_at: matchedRun ? matchedRun.updated_at : null\n  }\n}];"
+        "jsCode": "// Match active run & increment bounded retry counter\nconst config = $('⚙️ Set Your GitHub Config & Token').first().json;\nconst currentPollCount = (config.poll_count || 0) + 1;\nconfig.poll_count = currentPollCount;\n\nconst runsPayload = $input.first().json || {};\nconst runs = runsPayload.workflow_runs || [];\n\nconst triggerTimestamp = new Date(config.triggered_at).getTime() - 60000;\nlet matchedRun = null;\n\nfor (const r of runs) {\n  const runCreatedAt = new Date(r.created_at).getTime();\n  const branchMatch = r.head_branch === config.ref;\n  const shaMatch = config.commit_sha ? r.head_sha.startsWith(config.commit_sha) : true;\n  \n  if (runCreatedAt >= triggerTimestamp && (branchMatch || shaMatch)) {\n    matchedRun = r;\n    break;\n  }\n}\n\nif (!matchedRun && runs.length > 0) {\n  matchedRun = runs[0];\n}\n\nconst isCompleted = matchedRun ? matchedRun.status === 'completed' : false;\nconst isTimedOut = currentPollCount >= config.max_polls;\n\nreturn [{\n  json: {\n    ...config,\n    poll_count: currentPollCount,\n    is_completed: isCompleted,\n    is_timed_out: isTimedOut,\n    run_id: matchedRun ? matchedRun.id : null,\n    run_number: matchedRun ? matchedRun.run_number : null,\n    head_sha: matchedRun ? matchedRun.head_sha : config.commit_sha,\n    status: matchedRun ? matchedRun.status : 'not_found',\n    conclusion: matchedRun ? matchedRun.conclusion : null,\n    html_url: matchedRun ? matchedRun.html_url : null,\n    updated_at: matchedRun ? matchedRun.updated_at : null\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -510,6 +510,31 @@
       "continueOnFail": true
     },
     {
+      "parameters": {
+        "jsCode": "// Prepare Rich HTML QA Report for Email\nconst verifiedData = $('Verify Conclusion & SHA').first()?.json || {};\nconst isPass = verifiedData.verified_success === true;\nconst statusColor = isPass ? '#10B981' : '#EF4444';\nconst statusBadge = isPass ? '🟢 ALL TESTS PASSED' : '🔴 TESTS FAILED - TRIAGE OPENED';\n\nconst recipientEmail = verifiedData.recipient_email || 'kunalpawar0309@gmail.com';\nconst repo = `${verifiedData.repo_owner}/${verifiedData.repo_name}`;\nconst runUrl = verifiedData.html_url || `https://github.com/${repo}/actions`;\nconst runNumber = verifiedData.run_number || '1';\nconst sha = verifiedData.head_sha || 'latest';\n\nconst subject = `[Playwright QA Report] ${isPass ? 'PASSED' : 'ACTION REQUIRED'}: ${repo} (Run #${runNumber})`;\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <style>\n    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0F172A; color: #F8FAFC; margin: 0; padding: 24px; }\n    .container { max-width: 600px; margin: 0 auto; background-color: #1E293B; border-radius: 12px; border: 1px solid #334155; overflow: hidden; }\n    .header { background: linear-gradient(135deg, #1E1B4B 0%, #311042 100%); padding: 28px 24px; border-bottom: 1px solid #334155; text-align: center; }\n    .badge { display: inline-block; padding: 6px 14px; border-radius: 9999px; font-weight: bold; font-size: 13px; letter-spacing: 0.5px; background-color: ${statusColor}22; color: ${statusColor}; border: 1px solid ${statusColor}; margin-bottom: 12px; }\n    .content { padding: 24px; }\n    .grid { margin: 18px 0; border: 1px solid #334155; border-radius: 8px; overflow: hidden; }\n    .row { display: flex; padding: 10px 14px; border-bottom: 1px solid #334155; background: #0F172A55; }\n    .row:last-child { border-bottom: none; }\n    .col-label { width: 140px; font-weight: 600; color: #94A3B8; font-size: 13px; }\n    .col-value { flex: 1; color: #F1F5F9; font-size: 13px; word-break: break-all; }\n    .summary-box { background: #0F172A; border-left: 4px solid ${statusColor}; padding: 14px; border-radius: 4px; margin: 20px 0; }\n    .btn { display: inline-block; background-color: #6366F1; color: #ffffff !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; margin-top: 10px; }\n    .footer { padding: 18px 24px; background: #0F172A; text-align: center; font-size: 11px; color: #64748B; border-top: 1px solid #334155; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <div class=\"badge\">${statusBadge}</div>\n      <h2 style=\"margin: 0; color: #FFFFFF;\">Automated Playwright QA Report</h2>\n      <p style=\"margin: 6px 0 0; color: #94A3B8; font-size: 14px;\">${repo}</p>\n    </div>\n    <div class=\"content\">\n      <div class=\"summary-box\">\n        <strong style=\"color: ${statusColor};\">Status Overview:</strong>\n        <p style=\"margin: 6px 0 0; color: #CBD5E1; font-size: 13px;\">\n          ${isPass \n            ? 'All Playwright end-to-end tests completed with 100% success on GitHub Actions. No regressions detected.' \n            : 'Automated test suite detected failures. An automated Antigravity triage ticket was opened on GitHub.'}\n        </p>\n      </div>\n\n      <div class=\"grid\">\n        <div class=\"row\"><div class=\"col-label\">Repository:</div><div class=\"col-value\">${repo}</div></div>\n        <div class=\"row\"><div class=\"col-label\">Commit SHA:</div><div class=\"col-value\"><code>${sha.substring(0, 7)} (${sha})</code></div></div>\n        <div class=\"row\"><div class=\"col-label\">Branch / Ref:</div><div class=\"col-value\">${verifiedData.ref}</div></div>\n        <div class=\"row\"><div class=\"col-label\">GitHub Run:</div><div class=\"col-value\">Run #${runNumber}</div></div>\n        <div class=\"row\"><div class=\"col-label\">Correlation ID:</div><div class=\"col-value\"><code>${verifiedData.correlation_id}</code></div></div>\n        <div class=\"row\"><div class=\"col-label\">Execution Time:</div><div class=\"col-value\">${new Date().toUTCString()}</div></div>\n      </div>\n\n      <div style=\"text-align: center; margin: 24px 0;\">\n        <a href=\"${runUrl}\" class=\"btn\" target=\"_blank\">View Playwright Report & Artifacts &rarr;</a>\n      </div>\n    </div>\n    <div class=\"footer\">\n      Automated by n8n Cloud &bull; GitHub Actions &bull; Antigravity Desktop QA Orchestrator\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{\n  json: {\n    ...verifiedData,\n    email_recipient: recipientEmail,\n    email_subject: subject,\n    email_html: html\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2460, 280],
+      "id": "format-email-report-node",
+      "name": "Format HTML Email Report"
+    },
+    {
+      "parameters": {
+        "fromEmail": "qa-reports@n8n-playwright.internal",
+        "toEmail": "={{ $json.email_recipient }}",
+        "subject": "={{ $json.email_subject }}",
+        "html": "={{ $json.email_html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [2700, 280],
+      "id": "send-email-report-node",
+      "name": "Send Final Email Report",
+      "continueOnFail": true
+    },
+    {
       "parameters": {},
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -754,6 +779,17 @@
         ]
       ]
     },
+    "Send Pass Notification": {
+      "main": [
+        [
+          {
+            "node": "Format HTML Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Set GitHub Status (Failure)": {
       "main": [
         [
@@ -781,6 +817,28 @@
         [
           {
             "node": "Secure Agent Handoff / Issue Creation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Secure Agent Handoff / Issue Creation": {
+      "main": [
+        [
+          {
+            "node": "Format HTML Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format HTML Email Report": {
+      "main": [
+        [
+          {
+            "node": "Send Final Email Report",
             "type": "main",
             "index": 0
           }
@@ -824,7 +882,10 @@
       "name": "GitHub Actions"
     },
     {
-      "name": "Antigravity Handoff"
+      "name": "Multi-Repo Support"
+    },
+    {
+      "name": "Email Reports"
     }
   ]
 }
